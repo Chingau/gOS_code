@@ -25,7 +25,7 @@ _start:
     call print
     xchg bx, bx
 
-    ;jmp SETUP_MAIN_ADDR         ;移交控制权
+    jmp SETUP_MAIN_ADDR         ;移交控制权
 
     ;正常情况下不会执行到下面3行代码
     mov si, read_floppy_error
