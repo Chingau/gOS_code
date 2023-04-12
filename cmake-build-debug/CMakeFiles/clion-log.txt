@@ -1,4 +1,1 @@
-/home/ziya/Documents/clion-2022.2.1/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/ziya/Documents/clion-2022.2.1/bin/ninja/linux/ninja -G Ninja -S /home/ziya/gos -B /home/ziya/gos/cmake-build-debug
--- Configuring done
--- Generating done
--- Build files have been written to: /home/ziya/gos/cmake-build-debug
+CMakeLists.txt not found in /home/ziya/gos Select CMakeLists.txt

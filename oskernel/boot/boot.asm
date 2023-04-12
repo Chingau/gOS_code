@@ -1,3 +1,4 @@
+;0柱面0磁道1扇区
 [ORG  0x7c00]
 
 [SECTION .data]
@@ -11,15 +12,61 @@ _start:
     mov ax, 3
     int 0x10
 
-    ;读软盘
-    mov ch, 0                   ;0柱面
-    mov dh, 0                   ;0磁头
-    mov cl, 2                   ;第2扇区
-    mov bx, SETUP_MAIN_ADDR     ;数据往哪读
-    mov ah, 0x02                ;读操作
-    mov al, 1                   ;连续读几个扇区
-    mov dl, 0                   ;驱动器编号
-    int 0x13
+    mov dx, 0x1f2       ;指定读取或定入的扇区数
+    mov al, 1           ;读取1个扇区, 根据setup.asm文件的大小实际设置
+    out dx, al          ;操作硬盘寄存器
+
+    mov ecx, 2          ;从硬盘的第2扇区开始读
+    ;设置LBA的地址
+    mov dx, 0x1f3
+    mov al, cl
+    out dx, al          ;LBA地址的低8位
+
+    mov dx, 0x1f4
+    mov al, ch
+    out dx, al          ;LBA地址的中8位
+
+    mov dx, 0x1f5
+    shr ecx, 16
+    mov al, cl
+    out dx, al          ;LBA地址的高8位
+
+    ;bit0~3: LBA地址的24~27位
+    ;bit4: 0-主盘 1-从盘
+    ;bit5, bit7: 固定为1
+    ;bit6: 1-LBA模式 0-CHS模式
+    xchg bx, bx
+    mov dx, 0x1f6
+    mov al, ch
+    ;and al, 0b00001111
+    ;or al, 0b11100000       ;主盘，LBA模式
+    and al, 0b1110_1111
+    out dx, al
+
+    ;命令或状态端口
+    mov dx, 0x1f7
+    mov al, 0x20        ;读命令，即以读的方式操作硬盘
+    out dx, al          ;断点
+
+    ;验证状态
+    ;bit3: 0-表示硬盘未准备好 1-准备好了
+    ;bit7: 0-表示硬盘不忙 1-表示硬盘忙
+    ;bit0: 0-表示前一条指令正常执行 1-表示执行出错，出错信息通过0x1f1端口获得
+.read_check:
+    mov dx, 0x1f7
+    in al, dx
+    and al, 0b10001000      ;取硬盘状态的bit3,bit7
+    cmp al, 0b00001000      ;硬盘数据已准备好且不忙
+    jnz .read_check
+    ;读数据
+    mov dx, 0x1f0
+    mov cx, 256
+    mov edi, SETUP_MAIN_ADDR
+.read_data:
+    in ax, dx
+    mov [edi], ax
+    add edi, 2
+    loop .read_data
 
     mov si, jmp_to_setup
     call print
@@ -51,7 +98,7 @@ print:
     ret
 
 read_floppy_error:
-    db "read floppy error!", 10, 13, 0      ;read floppy error!\r\n0
+    db "read disk error!", 10, 13, 0      ;read disk error!\r\n0
 
 jmp_to_setup:
     db "jump to setup...", 10, 13, 0        ;jump to setup...\r\n0
