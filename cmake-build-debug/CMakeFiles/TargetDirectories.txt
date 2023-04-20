@@ -1,3 +1,0 @@
-/home/ziya/gos/cmake-build-debug/CMakeFiles/gos.dir
-/home/ziya/gos/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/ziya/gos/cmake-build-debug/CMakeFiles/rebuild_cache.dir
