@@ -25,15 +25,12 @@ ${BUILD}/system.bin:${BUILD}/kernel.bin
 	objcopy -O binary ${BUILD}/kernel.bin $@
 	nm ${BUILD}/kernel.bin | sort > ${BUILD}/system.map
 
-${BUILD}/kernel.bin:${BUILD}/boot/head.o ${BUILD}/init/main.o
-	ld -m elf_i386 $^ -o $@ -Ttext 0x1200
+${BUILD}/kernel.bin:${BUILD}/init/main.o
+	ld -m elf_i386 $^ -o $@ -Ttext 0x1200 -e kernel_main
 
 ${BUILD}/init/main.o:oskernel/init/main.c
 	$(shell mkdir -p ${BUILD}/init)
 	gcc ${CFLAGS} ${DEBUG} -c $^ -o $@
-
-${BUILD}/boot/head.o:oskernel/boot/head.asm
-	nasm -f elf32 -g $< -o $@
 
 ${BUILD}/boot/%.o: oskernel/boot/%.asm
 	$(shell mkdir -p ${BUILD}/boot)
