@@ -2,3 +2,7 @@
 cmake-build-debug
 build
 bx_enh_dbg.ini
+*.o
+*.img
+*.bin
+*.map

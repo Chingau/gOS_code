@@ -1,5 +1,3 @@
-BUILD:=./build
-
 CFLAGS := -m32	#32位程序
 CFLAGS += -masm=intel
 CFLAGS += -fno-builtin	#不需要gcc内置函数
@@ -11,45 +9,64 @@ CFLAGS += -fno-stack-protector	#不需要栈保护
 CFLAGS := $(strip ${CFLAGS})
 
 DEBUG := -g
-
 HD_IMG_NAME := hd.img
 
-all: ${BUILD}/boot/boot.o ${BUILD}/boot/setup.o ${BUILD}/system.bin
-	$(shell rm -rf $(BUILD)$(HD_IMG_NAME))
-	bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat $(BUILD)/$(HD_IMG_NAME)
-	dd if=$(BUILD)/boot/boot.o of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=0 count=1 conv=notrunc
-	dd if=$(BUILD)/boot/setup.o of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=1 count=2 conv=notrunc
-	dd if=$(BUILD)/system.bin of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=3 count=60 conv=notrunc
+PATHS += oskernel/init
+PATHS += oskernel/kernel
+FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
+OBJS := $(patsubst %.c, %.o, $(FILES))
 
-${BUILD}/system.bin:${BUILD}/kernel.bin
-	objcopy -O binary ${BUILD}/kernel.bin $@
-	nm ${BUILD}/kernel.bin | sort > ${BUILD}/system.map
+ASM_PATHS := oskernel/kernel/asm
+ASM_FILES := $(foreach path, $(ASM_PATHS), $(wildcard $(path)/*.asm))
+ASM_OBJS := $(patsubst %.asm, %.o, $(ASM_FILES))
 
-${BUILD}/kernel.bin:${BUILD}/boot/head.o ${BUILD}/init/main.o
+INCS := oskernel/include/asm
+INC_PATHS := $(patsubst %, -I%, $(INCS))
+
+all: oskernel/boot/boot.o oskernel/boot/setup.o oskernel/system.bin
+	bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat oskernel/$(HD_IMG_NAME)
+	dd if=oskernel/boot/boot.o of=oskernel/$(HD_IMG_NAME) bs=512 seek=0 count=1 conv=notrunc
+	dd if=oskernel/boot/setup.o of=oskernel/$(HD_IMG_NAME) bs=512 seek=1 count=2 conv=notrunc
+	dd if=oskernel/system.bin of=oskernel/$(HD_IMG_NAME) bs=512 seek=3 count=60 conv=notrunc
+
+oskernel/system.bin:oskernel/kernel.bin
+	objcopy -O binary oskernel/kernel.bin $@
+	nm oskernel/kernel.bin | sort > oskernel/system.map
+
+oskernel/kernel.bin:oskernel/boot/head.o $(OBJS) $(ASM_OBJS)
 	ld -m elf_i386 $^ -o $@ -Ttext 0x1200
 
-${BUILD}/init/main.o:oskernel/init/main.c
-	$(shell mkdir -p ${BUILD}/init)
-	gcc ${CFLAGS} ${DEBUG} -c $^ -o $@
-
-${BUILD}/boot/head.o:oskernel/boot/head.asm
-	nasm -f elf32 -g $< -o $@
-
-${BUILD}/boot/%.o: oskernel/boot/%.asm
-	$(shell mkdir -p ${BUILD}/boot)
+oskernel/boot/boot.o: oskernel/boot/boot.asm
 	nasm $< -o $@
 
+oskernel/boot/setup.o: oskernel/boot/setup.asm
+	nasm $< -o $@
+
+oskernel/boot/head.o:oskernel/boot/head.asm
+	nasm -f elf32 ${DEBUG} $< -o $@
+
+$(OBJS):$(FILES)
+	gcc ${CFLAGS} ${DEBUG} -c $< -o $@ $(INC_PATHS)
+
+$(ASM_OBJS):$(ASM_FILES)
+	nasm -f elf32 ${DEBUG} $< -o $@
+
+CLEANS := $(shell find -name "*.bin")
+CLEANS += $(shell find -name "*.map")
+CLEANS += $(shell find -name "*.o")
+CLEANS += $(shell find -name "*.img")
+
 clean:
-	$(shell rm -rf ${BUILD})
+	$(RM) $(CLEANS)
 
 bochs:
 	bochs -q -f bochsrc
 
 qemug: all
-	qemu-system-x86_64 -m 32M -hda $(BUILD)/$(HD_IMG_NAME) -S -s
+	qemu-system-x86_64 -m 32M -hda oskernel/$(HD_IMG_NAME) -S -s
 
 qemu: all
 	qemu-system-i386 \
 	-m 32M \
 	-boot c \
-	-hda $(BUILD)/$(HD_IMG_NAME)
+	-hda oskernel/$(HD_IMG_NAME)
