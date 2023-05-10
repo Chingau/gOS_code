@@ -12,7 +12,7 @@ DEBUG := -g
 HD_IMG_NAME := hd.img
 
 PATHS += oskernel/init
-PATHS += oskernel/kernel
+PATHS += oskernel/kernel/chr_drv
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
 OBJS := $(patsubst %.c, %.o, $(FILES))
 
@@ -21,7 +21,8 @@ ASM_FILES := $(foreach path, $(ASM_PATHS), $(wildcard $(path)/*.asm))
 ASM_OBJS := $(patsubst %.asm, %.o, $(ASM_FILES))
 
 INCS := oskernel/include/asm
-INC_PATHS := $(patsubst %, -I%, $(INCS))
+INCS += oskernel/include/linux
+INC_PATHS := $(foreach path, $(INCS), $(patsubst %, -I%, $(path)))
 
 all: oskernel/boot/boot.o oskernel/boot/setup.o oskernel/system.bin
 	bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat oskernel/$(HD_IMG_NAME)
@@ -45,8 +46,8 @@ oskernel/boot/setup.o: oskernel/boot/setup.asm
 oskernel/boot/head.o:oskernel/boot/head.asm
 	nasm -f elf32 ${DEBUG} $< -o $@
 
-$(OBJS):$(FILES)
-	gcc ${CFLAGS} ${DEBUG} -c $< -o $@ $(INC_PATHS)
+$(OBJS):
+	gcc ${CFLAGS} ${DEBUG} -c $*.c -o $@ $(INC_PATHS)
 
 $(ASM_OBJS):$(ASM_FILES)
 	nasm -f elf32 ${DEBUG} $< -o $@
