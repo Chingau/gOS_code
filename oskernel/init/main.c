@@ -3,6 +3,11 @@
 
 void kernel_main(void)
 {
-    console_clear();
-    console_write("Hello world.", 12);
+    console_init();
+
+    char *s = "gaoxu";
+    for (int i = 0; i < 10; ++i) {
+        printk("name:%s, index:%d\n", s, i);
+    }
+    while (1);
 }

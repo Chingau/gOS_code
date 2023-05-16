@@ -46,6 +46,7 @@ static void set_screen(void)
     write_byte(CRT_DATA_REG, ((screen - MEM_BASE) >> 1) & 0xff);
 }
 
+//设置光标的位置
 static void set_cursor(void)
 {
     write_byte(CRT_ADDR_REG, CRT_CURSOR_H);
@@ -55,7 +56,7 @@ static void set_cursor(void)
 }
 
 //清屏
-void console_clear(void)
+static void console_clear(void)
 {
     screen = MEM_BASE;
     pos = MEM_BASE;
@@ -137,24 +138,24 @@ void console_write(char *buf, u32 count)
                 break;
             case ASCII_BEL:
                 break;
-            case ASCII_BS:
+            case ASCII_BS:      //退格
                 command_bs();
                 break;
             case ASCII_HT:
                 break;
-            case ASCII_LF:
+            case ASCII_LF:      //换行
                 command_lf();
                 command_cr();
                 break;
             case ASCII_VT:
                 break;
-            case ASCII_FF:
+            case ASCII_FF:      //换页
                 command_lf();
                 break;
-            case ASCII_CR:
+            case ASCII_CR:      //回车
                 command_cr();
                 break;
-            case ASCII_DEL:
+            case ASCII_DEL:     //删除
                 command_del();
                 break;
             default:
@@ -175,4 +176,9 @@ void console_write(char *buf, u32 count)
         }
     }
     set_cursor();
+}
+
+void console_init(void)
+{
+    console_clear();
 }

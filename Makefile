@@ -12,7 +12,9 @@ DEBUG := -g
 HD_IMG_NAME := hd.img
 
 PATHS += oskernel/init
+PATHS += oskernel/kernel
 PATHS += oskernel/kernel/chr_drv
+PATHS += oskernel/lib
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
 OBJS := $(patsubst %.c, %.o, $(FILES))
 
@@ -20,7 +22,8 @@ ASM_PATHS := oskernel/kernel/asm
 ASM_FILES := $(foreach path, $(ASM_PATHS), $(wildcard $(path)/*.asm))
 ASM_OBJS := $(patsubst %.asm, %.o, $(ASM_FILES))
 
-INCS := oskernel/include/asm
+INCS += oskernel/include
+INCS += oskernel/include/asm
 INCS += oskernel/include/linux
 INC_PATHS := $(foreach path, $(INCS), $(patsubst %, -I%, $(path)))
 
