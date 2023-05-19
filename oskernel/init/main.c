@@ -1,13 +1,12 @@
-#include "io.h"
+#include "kernel.h"
+#include "traps.h"
 #include "tty.h"
 
 void kernel_main(void)
 {
     console_init();
+    gdt_init();
 
-    char *s = "gaoxu";
-    for (int i = 0; i < 10; ++i) {
-        printk("name:%s, index:%d\n", s, i);
-    }
+    printk("hello gos!\n");
     while (1);
 }
