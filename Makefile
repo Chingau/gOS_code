@@ -53,7 +53,7 @@ $(OBJS):
 	gcc ${CFLAGS} ${DEBUG} -c $*.c -o $@ $(INC_PATHS)
 
 $(ASM_OBJS):$(ASM_FILES)
-	nasm -f elf32 ${DEBUG} $< -o $@
+	nasm -f elf32 ${DEBUG} $*.asm -o $@
 
 CLEANS := $(shell find -name "*.bin")
 CLEANS += $(shell find -name "*.map")

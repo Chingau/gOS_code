@@ -20,6 +20,17 @@ typedef struct {
 } __attribute__((packed)) gdt_item_t;
 
 typedef struct {
+    short offset0;                      //段内偏移0~15位
+    short selector;                     //代码段选择子
+    char reserved;                      //保留
+    char type : 4;                      //任务门，中断门，陷阱门
+    char segment : 1;                   //为0时表示系统段
+    char dpl : 2;                       //使用int指令访问的最低权限
+    char present : 1;                   //存在位
+    short offset1;                      //段内偏移16~31位
+} __attribute__((packed)) interrupt_gate_t;
+
+typedef struct {
     char RPL : 2;           //请求特权级(当前特权级)
     char TI : 1;            //0-在GDT表索引 1-在LDT表索引
     short index : 13;       //索引值，即GDT/LDT的下标

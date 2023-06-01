@@ -84,7 +84,7 @@ void gdt_init(void)
     r3_data_selector.TI = 0;
     r3_data_selector.index = 5;
 
-    gdt_ptr.base = (int *)&gdt;
+    gdt_ptr.base = (int)gdt;
     gdt_ptr.limit = sizeof(gdt) - 1;
 
     BOCHS_DEBUG_MAGIC
