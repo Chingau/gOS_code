@@ -4,6 +4,11 @@
 [SECTION .data]
 KERNEL_BASE_ADDR equ 0x1200
 STACK_TOP_ADDR equ 0x9fbff
+ARDS_BUFFER equ 0x1102
+ARDS_NR_BUFFER equ 0x1100   ;配合C语言结构体部分
+ARDS_NR dw 0
+CHECK_BUFFER_OFFER dw 0
+
 TI_GDT equ 000b
 TI_LDT equ 100b
 RPL0 equ 00b
@@ -49,6 +54,29 @@ setup_start:
     call print
     xchg bx, bx
 
+;------------------------------------------------;
+; 内存检测
+;------------------------------------------------;
+memory_check:
+    xor ebx, ebx
+    mov di, ARDS_BUFFER     ;es:di指向一块内存，用于保存读出来的ARDS结构; es为0,前面已赋值为0
+    mov edx, 0x534d4150
+.loop:
+    mov eax, 0xe820
+    mov ecx, 20
+    int 0x15
+    jc memory_check_error   ;if(CF!=0),内存检测出错
+    add di, cx              ;将下次读到的ARDS结构保存到下一个内在地址处
+    inc word [ARDS_NR]      ;记录有多少个ARDS结构
+    cmp ebx, 0              ;在检测的时候，ebx会被bios修改，ebx不等于0时需要继续检测
+    jne .loop
+    mov ax, [ARDS_NR]       ;保存ARDS结构的个数
+    mov [ARDS_NR_BUFFER], ax
+    mov [CHECK_BUFFER_OFFER], di    ;保存offset
+.memory_check_success:
+    mov si, memory_check_success_msg
+    call print
+
 ;进入保护模式
 ;   1.打开A20
 ;   2.加载gdt
@@ -69,6 +97,14 @@ enter_protected_mode:
 
     ; 刷新流水线
     jmp SELECTOR_CODE:p_mode_start
+
+;------------------------------------------------;
+; 内存检测出错信息打印
+;------------------------------------------------;
+memory_check_error:
+    mov si, memory_check_error_msg
+    call print
+    jmp $
 
 ;------------------------------------------------;
 ;打印字符
@@ -191,3 +227,9 @@ read_hd_data:
 
 prepare_enter_protected_mode_msg:
     db "Prepare to go into protected mode...", 10, 13, 0
+
+memory_check_error_msg:
+    db "memory check fail...", 10, 13, 0
+
+memory_check_success_msg:
+    db "memory check success...", 10, 13, 0

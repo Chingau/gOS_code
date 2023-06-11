@@ -15,6 +15,7 @@ PATHS += oskernel/init
 PATHS += oskernel/kernel
 PATHS += oskernel/kernel/chr_drv
 PATHS += oskernel/lib
+PATHS += oskernel/mm
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
 OBJS := $(patsubst %.c, %.o, $(FILES))
 
