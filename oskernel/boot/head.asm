@@ -34,7 +34,7 @@ _start:
 
     ;向主片发送OCW1，接收键盘和时钟中断
 .enable_8259a_master:
-    mov al, 1111_1100b
+    mov al, 1111_1101b
     out 21h, al
 
     ;向从片发送OCW1，屏蔽从片所有中断响应
