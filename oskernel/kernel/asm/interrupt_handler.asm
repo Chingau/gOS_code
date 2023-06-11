@@ -4,10 +4,12 @@
 extern exception_handler
 extern printk
 extern keymap_handler
+extern clock_handler
 
 global interrupt_handler_table
 global interrupt_default_entry
 global keymap_handler_entry
+global clock_handler_entry
 
 ;默认的中断入口函数
 interrupt_default_entry:
@@ -20,6 +22,13 @@ interrupt_default_entry:
 keymap_handler_entry:
     push 0x21
     call keymap_handler
+    add esp, 4
+    iret
+
+;时钟中断入口函数
+clock_handler_entry:
+    push 0x20
+    call clock_handler
     add esp, 4
     iret
 

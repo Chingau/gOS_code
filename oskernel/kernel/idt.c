@@ -9,6 +9,7 @@ xdt_ptr_t idt_ptr;
 extern int interrupt_handler_table[0x2f];   //在汇编中定义的中断向量表
 extern void interrupt_default_entry(void);
 extern void keymap_handler_entry(void);
+extern void clock_handler_entry(void);
 
 void idt_init(void)
 {
@@ -25,6 +26,10 @@ void idt_init(void)
         } else {
             //可屏蔽中断
             handler = (int)interrupt_default_entry;
+        }
+
+        if (index == 0x20) {
+            handler = (int)clock_handler_entry;
         }
 
         //键盘中断
