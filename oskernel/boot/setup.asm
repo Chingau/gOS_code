@@ -18,6 +18,7 @@ PRL3 equ 11b
 
 SELECTOR_CODE equ (0x0001 << 3) + TI_GDT + RPL0
 SELECTOR_DATA equ (0x0002 << 3) + TI_GDT + RPL0
+SELECTOR_VIDEO equ (0x0003 << 3) + TI_GDT + RPL0
 
 ;构建GDT表
 GDT_BASE:
@@ -134,6 +135,7 @@ p_mode_start:
     mov ss, ax
     mov es, ax
     mov fs, ax
+    mov ax, SELECTOR_VIDEO
     mov gs, ax
     mov esp, STACK_TOP_ADDR
 

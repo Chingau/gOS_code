@@ -7,6 +7,8 @@ extern void clock_init(void);
 
 void kernel_main(void)
 {
+    int temp = 0x11223344;
+
     console_init();
     gdt_init();
     idt_init();
