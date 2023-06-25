@@ -14,6 +14,7 @@ void kernel_main(void)
     idt_init();
     clock_init();
     check_memory();
+    mem_init();
 
     printk("hello gos!\n");
     __asm__("sti;");
