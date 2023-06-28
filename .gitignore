@@ -6,3 +6,4 @@ bx_enh_dbg.ini
 *.img
 *.bin
 *.map
+.vscode
