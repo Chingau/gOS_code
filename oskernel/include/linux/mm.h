@@ -38,8 +38,15 @@ typedef struct {
 
 void check_memory(void);
 void memory_map_init(void);
+void *virtual_memory_init(void);
+
+// 分配、释放物理内存
 void *get_free_page(void);
-void free_page(void *p) ;
+void free_page(void *p);
+
+// 分配、释放虚拟内存
+void* kmalloc(size_t size);
+void kfree_s(void *obj, int size);
 
 #endif
 

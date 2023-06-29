@@ -5,6 +5,7 @@
 #include "mm.h"
 #include "string.h"
 #include "types.h"
+#include "system.h"
 
 #define ARDS_ADDR   0x1100
 #define LOW_MEM     0x100000    //1M以下的物理内在给内核用
@@ -98,7 +99,7 @@ void *get_free_page(void)
 */
 void free_page(void *p) 
 {
-    if (p < g_physics_memory.addr_start || p > g_physics_memory.addr_end) {
+    if ((uint)p < g_physics_memory.addr_start || (uint)p > g_physics_memory.addr_end) {
         printk("invalid physics address.\r\n");
         return;
     }
@@ -107,4 +108,51 @@ void free_page(void *p)
     g_physics_memory_map.map[index] = 0;
     g_physics_memory_map.bitmap_item_used--;
     printk("[%s]return: 0x%04X, used: %d pages\r\n", __FUNCTION__, p, g_physics_memory_map.bitmap_item_used);
+}
+
+/*
+ * 下面代码是开启分页机制
+ * 一个pdt 4k
+ * 4g内存需要 0x1000 * 0x1000 + 0x1000 大小的页表来完整映射内存
+*/
+#define PDT_START_ADDR      0x20000     //页表从该地址开始存放
+#define VIRTUAL_MEM_START   0x200000    //线性地址从2MB开始存放
+
+void *virtual_memory_init(void)
+{
+    int *pdt = (int *)PDT_START_ADDR;
+    int *pde_ptr;
+
+    memset(pdt, 0, PAGE_SIZE);
+    for (int i = 0; i < 4; ++i) {
+        //每一项pde都对应一个页表+低12位的权限值
+        int pde = (int)PDT_START_ADDR + ((i + 1) * 0x1000);
+        pde |= 0x07;
+        pdt[i] = pde;
+        pde_ptr = (int *)(pde & 0xFFFFFFF8); //去除权限值
+        if (i == 0) {
+            //第一块映射区给内核用
+            for (int j = 0; j < 1024; ++j) {
+                int *item = &pde_ptr[j];
+                int virtual_addr = j * 0x1000;
+                *item = virtual_addr | 0x07;
+            }
+        } else {
+           for (int j = 0; j < 1024; ++j) {
+            /*
+               int* item = &pde_ptr[j];
+               int virtual_addr = j * 0x1000;
+               virtual_addr = virtual_addr + i * 0x400 * 0x1000;
+               *item = 0b00000000000000000000000000000111 | virtual_addr;
+            */
+           }
+        }
+    }
+
+    BOCHS_DEBUG_MAGIC
+    set_cr3((uint)pdt);
+    enable_page();
+    BOCHS_DEBUG_MAGIC
+    printk("pdt addr: 0x%08X\r\n", pdt);
+    return pdt;
 }

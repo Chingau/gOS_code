@@ -7,8 +7,8 @@
 
 #define DEBUG
 #define BOCHS_DEBUG_MAGIC   __asm__("xchg bx, bx");//bochs调试断点
-#define STI __asm__("sti")
-#define CLI __asm__("cli")
+#define STI __asm__("sti");
+#define CLI __asm__("cli");
 
 typedef enum {
     rc_black = 0,
