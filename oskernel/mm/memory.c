@@ -29,7 +29,7 @@ void check_memory(void)
                temp->base_addr_high, temp->base_addr_low, temp->length_high, temp->length_low, temp->type);
 
         if (temp->base_addr_low == LOW_MEM) {
-            mem_bytes_total = temp->length_low;
+            mem_bytes_total = temp->length_low + temp->base_addr_low;
             //printk("mem_bytes_total: 0x%08x\r\n", mem_bytes_total);
         }
     }

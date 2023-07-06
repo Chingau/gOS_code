@@ -3,12 +3,23 @@
 #include "tty.h"
 #include "mm.h"
 #include "system.h"
+#include "thread.h"
 
 extern void clock_init(void);
 
+void test_thread_proc(void *arg)
+{
+    int para = *(int *)arg;
+
+    for (int i = 0; i < para; ++i) {
+        printk("thread: %d\r\n", i);
+    }
+    return;
+}
+
 void kernel_main(void)
 {
-    int temp = 0x11223344;
+    int num = 10;
 
     console_init();
     gdt_init();
@@ -17,9 +28,10 @@ void kernel_main(void)
     check_memory();
     mem_init();
 
-    void *addr = get_kernel_pages(3);
-    printk("get_kernel_page start vaddr is: 0x%08x\r\n", (uint32_t)addr);
     printk("hello gos!\n");
+
+    thread_start("test_thread", 1, test_thread_proc, &num);
+
     __asm__("sti;");
     BOCHS_DEBUG_MAGIC
     while (1);
