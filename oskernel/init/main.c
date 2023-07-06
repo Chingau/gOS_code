@@ -4,18 +4,9 @@
 #include "mm.h"
 #include "system.h"
 #include "thread.h"
+#include "debug.h"
 
 extern void clock_init(void);
-
-void test_thread_proc(void *arg)
-{
-    int para = *(int *)arg;
-
-    for (int i = 0; i < para; ++i) {
-        printk("thread: %d\r\n", i);
-    }
-    return;
-}
 
 void kernel_main(void)
 {
@@ -29,8 +20,10 @@ void kernel_main(void)
     mem_init();
 
     printk("hello gos!\n");
-
-    thread_start("test_thread", 1, test_thread_proc, &num);
+    uint32_t *addr = (uint32_t *)get_kernel_pages(3);
+    printk("malloc addr: 0x%08x\r\n", addr);
+    __asm__("sti;");
+    ASSERT(1==2);       //测试断言
 
     __asm__("sti;");
     BOCHS_DEBUG_MAGIC

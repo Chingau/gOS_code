@@ -1,4 +1,6 @@
 #include "kernel.h"
+#include "interrupt.h"
+#include "types.h"
 
 char *messages[] = {
         "#DE Divide Error\0",
@@ -47,4 +49,42 @@ void exception_handler(int idt_index,
     printk("      ESP : 0x%08X\n", esp);
     printk("===============\n");
     while(1);
+}
+
+
+#define EFLAGS_IF   0x00000200  //eflags寄存器中的if位为1
+#define GET_EFLAGS(flags_var)   __asm__ volatile("pushf; pop %0" : "=g"(flags_var))
+
+/* 获取当前中断状态 */
+INTR_STATUS_T intr_get_status(void)
+{
+    uint32_t eflags = 0;
+    GET_EFLAGS(eflags);
+    return (eflags & EFLAGS_IF) ? INTR_ON : INTR_OFF;
+}
+
+/* 将中断状态设置为入参 status */
+INTR_STATUS_T intr_set_status(INTR_STATUS_T status)
+{
+    return (status & INTR_ON) ? intr_enable() : intr_disable();
+}
+
+/* 开中断并返回开中断前的中断状态 */
+INTR_STATUS_T intr_enable(void)
+{
+    INTR_STATUS_T old_status = intr_get_status();
+    if (old_status == INTR_OFF) {
+        __asm__ volatile("sti");
+    }
+    return old_status;
+}
+
+/* 关中断并返回开中断前的中断状态 */
+INTR_STATUS_T intr_disable(void)
+{
+    INTR_STATUS_T old_status = intr_get_status();
+    if (old_status == INTR_ON) {
+        __asm__ volatile("cli":::"memory");
+    }
+    return old_status;
 }

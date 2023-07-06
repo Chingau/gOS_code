@@ -6,6 +6,7 @@
 #include "bitmap.h"
 #include "types.h"
 #include "string.h"
+#include "debug.h"
 
 #define ARDS_ADDR   0x1100
 #define LOW_MEM     0x100000    //1M以下的物理内在给内核用
@@ -202,12 +203,13 @@ static void page_table_add(void *_vaddr, void * _page_phyaddr)
      * */
     /* 先在页目录内判断目录项的P位，若为1,则表示该表已存在 */
     if (*pde & 0x00000001) {
+        ASSERT(!(*pte & 0x00000001));
+
         /* 只要是创建页表，pte就应该不存在 */
         if (!(*pte & 0x00000001)) {
             *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
         } else {
-            printk("pte repeate.\r\n");
-            *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
+            PANIC("pte repeat.");
         }
     } else {
         /*
@@ -223,9 +225,7 @@ static void page_table_add(void *_vaddr, void * _page_phyaddr)
          * 把低12位置0便是该pde对应的物理页的起始
          * */
         memset((void *)((int)pte & 0xfffff000), 0, PAGE_SIZE);
-        if (*pte & 0x00000001) {
-            printk("pte repeate..\r\n");
-        }
+        ASSERT(!(*pte & 0x00000001));
         *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
     }
 }
@@ -235,10 +235,7 @@ static void page_table_add(void *_vaddr, void * _page_phyaddr)
  * */
 void *malloc_page(enum pool_flags pf, uint32_t pg_cnt)
 {
-    if (pg_cnt <= 0 || pg_cnt >= 3840) {
-        printk("pg_cnt param error.\r\n");
-        return NULL;
-    }
+    ASSERT(pg_cnt > 0 && pg_cnt < 3840);
     /**************** malloc_page的原理是三个动作的合成：****************
      * 1.通过 vaddr_get 在虚拟内存池中申请虚拟地址
      * 2.通过 palloc 在物理内存池中申请物理页
@@ -270,7 +267,7 @@ void *malloc_page(enum pool_flags pf, uint32_t pg_cnt)
 }
 
 /*
- * 从内核物理内存池中申请1页内存
+ * 从内核物理内存池中申请pg_cnt页内存
  * 成功返回其虚拟地址，失败返回NULL
  * */
 void *get_kernel_pages(uint32_t pg_cnt)
