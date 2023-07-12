@@ -40,19 +40,19 @@ static uint x, y; // 当前光标的坐标
 //设置当前显示器开始的位置
 static void set_screen(void)
 {
-    write_byte(CRT_ADDR_REG, CRT_START_ADDR_H);
-    write_byte(CRT_DATA_REG, ((screen - MEM_BASE) >> 9) & 0xff);
-    write_byte(CRT_ADDR_REG, CRT_START_ADDR_L);
-    write_byte(CRT_DATA_REG, ((screen - MEM_BASE) >> 1) & 0xff);
+    outb(CRT_ADDR_REG, CRT_START_ADDR_H);
+    outb(CRT_DATA_REG, ((screen - MEM_BASE) >> 9) & 0xff);
+    outb(CRT_ADDR_REG, CRT_START_ADDR_L);
+    outb(CRT_DATA_REG, ((screen - MEM_BASE) >> 1) & 0xff);
 }
 
 //设置光标的位置
 static void set_cursor(void)
 {
-    write_byte(CRT_ADDR_REG, CRT_CURSOR_H);
-    write_byte(CRT_DATA_REG, ((pos - MEM_BASE) >> 9) & 0xff);
-    write_byte(CRT_ADDR_REG, CRT_CURSOR_L);
-    write_byte(CRT_DATA_REG, ((pos - MEM_BASE) >> 1) & 0xff);
+    outb(CRT_ADDR_REG, CRT_CURSOR_H);
+    outb(CRT_DATA_REG, ((pos - MEM_BASE) >> 9) & 0xff);
+    outb(CRT_ADDR_REG, CRT_CURSOR_L);
+    outb(CRT_DATA_REG, ((pos - MEM_BASE) >> 1) & 0xff);
 }
 
 //清屏

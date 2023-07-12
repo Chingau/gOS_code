@@ -5,13 +5,14 @@
 #ifndef __GOS_OSKERNEL_THREAD_H__
 #define __GOS_OSKERNEL_THREAD_H__
 #include "types.h"
+#include "list.h"
 
 typedef void thread_func(void *);
 
 /* 进程或线程的状态 */
 typedef enum {
     TASK_RUNNING,
-    TASL_READY,
+    TASK_READY,
     TASK_BLOCKED,
     TASK_WAITING,
     TASK_HANGING
@@ -21,7 +22,7 @@ typedef enum {
 /*
  此结构用于中断发生时保护程序(线程或进程)的上下文环境：
  进程或线程被外部中断或软中断打断时，会按照此结构压入上下文
- 寄存器，intr_exit 中的出栈操作是此结构的逆操作
+ 寄存器，退出中断时出栈操作是此结构的逆操作
  此栈在线程自己的内核中位置固定，所在页的最顶端
 */
 typedef struct {
@@ -35,10 +36,10 @@ typedef struct {
     uint32_t edx;
     uint32_t ecx;
     uint32_t eax;
-    uint32_t gs;
-    uint32_t fs;
-    uint32_t es;
-    uint32_t ds;
+    // uint32_t gs;
+    // uint32_t fs;
+    // uint32_t es;
+    // uint32_t ds;
     /* 以下参数是CPU由低特权级进入高特权级时压入 */
     uint32_t err_code;      //err_code会被压入到eip之后
     void (*eip)(void);
@@ -79,10 +80,19 @@ typedef struct {
 struct task_struct {
     uint32_t *self_kstack;      //各内核线程都用自己的内核栈  
     task_state_t status;        //线程状态
-    uint8_t priority;           //线程优先级
     char name[16];              //线程名
+    uint8_t priority;           //线程优先级
+    uint8_t ticks;              //每次在处理器上执行的时间嘀嗒数
+    uint32_t elapsed_ticks;     //此任务自上CPU运行至今占用了多少CPU嘀嗒数，也就是执行了多长时间
+    struct list_elem general_tag;   //用于添加到就绪队列中
+    struct list_elem all_list_tag;  //用于添加到所有队列中
+    uint32_t *pgdir;            //进程自己的页表的虚拟地址，线程此值为NULL
     uint32_t stack_magic;       //栈的边界标记，用于检测栈的溢出
 };
 
 struct task_struct* thread_start(char *name, uint8_t prio, thread_func *func, void *func_arg);
+struct task_struct *running_thread(void);
+void schedule(void);
+void thread_init(void);
+
 #endif

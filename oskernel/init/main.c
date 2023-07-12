@@ -5,27 +5,47 @@
 #include "system.h"
 #include "thread.h"
 #include "debug.h"
+#include "interrupt.h"
+#include "timer.h"
+#include "keyboard.h"
 
-extern void clock_init(void);
+void k_thread_a(void *);
+void k_thread_b(void *);
 
 void kernel_main(void)
 {
-    int num = 10;
-
     console_init();
     gdt_init();
     idt_init();
-    clock_init();
+    timer_init();
+    //keyboard_init();
     check_memory();
     mem_init();
-
+    thread_init();
+    
     printk("hello gos!\n");
-    uint32_t *addr = (uint32_t *)get_kernel_pages(3);
-    printk("malloc addr: 0x%08x\r\n", addr);
-    __asm__("sti;");
-    ASSERT(1==2);       //测试断言
 
-    __asm__("sti;");
-    BOCHS_DEBUG_MAGIC
-    while (1);
+    thread_start("k_thread_a", 31, k_thread_a, "argA");
+    thread_start("k_thread_b", 10, k_thread_b, "argB");
+    intr_enable();
+    while (1) {
+        printk("Main\r\n");
+    }
+    //BOCHS_DEBUG_MAGIC
+}
+
+void k_thread_a(void *arg)
+{
+    char *para = arg;
+    while (1) {
+        printk("a: %s\r\n", para);
+    }
+}
+
+void k_thread_b(void *arg)
+{
+    char *para = arg;
+    while (1) {
+        printk("b: %s\r\n", para);
+    }
 }

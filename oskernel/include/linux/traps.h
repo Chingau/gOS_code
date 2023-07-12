@@ -5,6 +5,5 @@
 #define __GOS_OSKERNEL_TRAPS_H__
 
 void gdt_init();
-void idt_init();
 
 #endif

@@ -15,7 +15,7 @@ extern gdt_ptr
 global _start
 
 _start:
-    call config_8259a
+    ;call config_8259a
     call setup_page
     call turn_on_page
     call enter_c_world
@@ -50,7 +50,7 @@ config_8259a:
 
     ;向主片发送OCW1，接收键盘和时钟中断
 .enable_8259a_master:
-    mov al, 1111_1101b
+    mov al, 1111_1100b
     out 21h, al
 
     ;向从片发送OCW1，屏蔽从片所有中断响应

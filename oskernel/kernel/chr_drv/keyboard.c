@@ -12,6 +12,7 @@
 #include "kernel.h"
 #include "types.h"
 #include "io.h"
+#include "interrupt.h"
 
 #define INV 0 // 不可见字符
 #define CODE_PRINT_SCREEN_DOWN 0xB7
@@ -233,13 +234,14 @@ static bool extcode_state;  // 扩展码状态
 // SHIFT 键状态
 #define shift_state (keymap[KEY_SHIFT_L][2] || keymap[KEY_SHIFT_R][2])
 
-void keymap_handler(int idt_index) {
+static void keymap_handler(int idt_index) 
+{
     uchar ext = 2; // keymap 状态索引，默认没有 shift 键
 
     // 告诉中断控制芯片中断已处理（好像不做这个事也没啥问题）
     //send_eoi(idt_index);
 
-    uchar scancode = read_byte(0x60);
+    uchar scancode = inb(0x60);
 
     // 是扩展码字节
     if (scancode == 0xe0)
@@ -332,4 +334,9 @@ void keymap_handler(int idt_index) {
         return;
 
     printk("%c", ch);
+}
+
+void keyboard_init(void)
+{
+    register_handler(0x21, keymap_handler);
 }
