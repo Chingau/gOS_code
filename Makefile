@@ -14,6 +14,7 @@ HD_IMG_NAME := hd.img
 PATHS += oskernel/init
 PATHS += oskernel/kernel
 PATHS += oskernel/kernel/chr_drv
+PATHS += oskernel/kernel/thread
 PATHS += oskernel/lib
 PATHS += oskernel/mm
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
