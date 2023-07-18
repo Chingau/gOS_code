@@ -21,7 +21,7 @@ void general_intr_handler(int vec_nr)
         return;
     }
 
-    printk("VECTOR: 0x%02x\r\n", vec_nr);
+    print_unlock("VECTOR: 0x%02x\r\n", vec_nr);
     while(1);
 }
 
@@ -40,15 +40,15 @@ static void exception_handler(int vec_nr,
                        char cs,
                        int eflags)
 {
-    printk("\n===============\n");
-    printk("EXCEPTION : %s \n", intr_name[vec_nr]);
-    printk("   VECTOR : 0x%02X\n", vec_nr);
-    printk("   EFLAGS : 0x%08X\n", eflags);
-    printk("       CS : 0x%02X\n", cs);
-    printk("      EIP : 0x%08X\n", eip);
-    printk("      ESP : 0x%08X\n", esp);
-    printk(" ERR_CODE : 0x%08X\n", error_code);
-    printk("===============\n");
+    print_unlock("\n===============\n");
+    print_unlock("EXCEPTION : %s \n", intr_name[vec_nr]);
+    print_unlock("   VECTOR : 0x%02X\n", vec_nr);
+    print_unlock("   EFLAGS : 0x%08X\n", eflags);
+    print_unlock("       CS : 0x%02X\n", cs);
+    print_unlock("      EIP : 0x%08X\n", eip);
+    print_unlock("      ESP : 0x%08X\n", esp);
+    print_unlock(" ERR_CODE : 0x%08X\n", error_code);
+    print_unlock("===============\n");
     while(1);
 }
 
@@ -92,7 +92,7 @@ static void intr_init(void)
 /* idt表初始化 */
 static void idt_desc_init(void)
 {
-    printk("init idt desc...\n");
+    print_unlock("init idt desc...\n");
 
     interrupt_gate_t *item = NULL;
     int handler;
@@ -124,7 +124,7 @@ static void idt_desc_init(void)
 /* 初始化可编程中断控制器8259A */
 static void pic_init(void)
 {
-    printk("pic init.\r\n");
+    print_unlock("pic init.\r\n");
 
     /* 初始化主片 */
     outb(PIC_M_CTRL, 0x11); //ICW1:边沿触发，级联8259，需要ICW4

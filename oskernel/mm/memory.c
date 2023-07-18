@@ -23,15 +23,15 @@ void check_memory(void)
     unsigned short times = p->times;
     check_memory_item_t *temp;
 
-    printk("BaseAddrHigh BaseAddrLow LengthHigh  LengthLow   Type\n");
+    print_unlock("BaseAddrHigh BaseAddrLow LengthHigh  LengthLow   Type\n");
     for (int i = 0; i < times; ++i) {
         temp = (ards + i);
-        printk("0x%08x,  0x%08x, 0x%08x, 0x%08x, %d\n",
+        print_unlock("0x%08x,  0x%08x, 0x%08x, 0x%08x, %d\n",
                temp->base_addr_high, temp->base_addr_low, temp->length_high, temp->length_low, temp->type);
 
         if (temp->base_addr_low == LOW_MEM) {
             mem_bytes_total = temp->length_low + temp->base_addr_low;
-            //printk("mem_bytes_total: 0x%08x\r\n", mem_bytes_total);
+            //print_unlock("mem_bytes_total: 0x%08x\r\n", mem_bytes_total);
         }
     }
 }
@@ -64,7 +64,7 @@ virtual_addr_t kernel_vaddr; //此结构用来给内核分配虚拟地址
  * */
 static void mem_pool_init(uint32_t all_mem)
 {
-    printk("mem_pool_init start.\r\n");
+    print_unlock("mem_pool_init start.\r\n");
     /*
      * 页表大小 = 1页的页目录表 + 第0和第768个页目录项指向同一个页表 + 第769～1022个页目录项共指向254个页表，共256个页框
      * */
@@ -93,10 +93,10 @@ static void mem_pool_init(uint32_t all_mem)
     kernel_pool.pool_bitmap.bits = (void *)MEM_BITMAP_BASE;
     user_pool.pool_bitmap.bits = (void *)(MEM_BITMAP_BASE + kbm_length);
 
-    printk("kernel_pool_bitmap_start: 0x%08x\r\n", (int)kernel_pool.pool_bitmap.bits);
-    printk("kernel_pool_phy_addr_start: 0x%08x\r\n", kernel_pool.phy_addr_start);
-    printk("user_pool_bitmap_start: 0x%08x\r\n", (int)user_pool.pool_bitmap.bits);
-    printk("user_pool_phy_addr_start: 0x%08x\r\n", user_pool.phy_addr_start);
+    print_unlock("kernel_pool_bitmap_start: 0x%08x\r\n", (int)kernel_pool.pool_bitmap.bits);
+    print_unlock("kernel_pool_phy_addr_start: 0x%08x\r\n", kernel_pool.phy_addr_start);
+    print_unlock("user_pool_bitmap_start: 0x%08x\r\n", (int)user_pool.pool_bitmap.bits);
+    print_unlock("user_pool_phy_addr_start: 0x%08x\r\n", user_pool.phy_addr_start);
 
     bitmap_init(&kernel_pool.pool_bitmap);
     bitmap_init(&user_pool.pool_bitmap);
@@ -110,14 +110,14 @@ static void mem_pool_init(uint32_t all_mem)
     kernel_vaddr.vaddr_bitmap.bits = (void *)(MEM_BITMAP_BASE + kbm_length + ubm_length);
     kernel_vaddr.vaddr_start = K_HEAP_START;
     bitmap_init(&kernel_vaddr.vaddr_bitmap);
-    printk("mem_pool_init done.\r\n");
+    print_unlock("mem_pool_init done.\r\n");
 }
 
 void mem_init(void)
 {
-    printk("mem_init start.\r\n");
+    print_unlock("mem_init start.\r\n");
     mem_pool_init(mem_bytes_total);
-    printk("mem_init done.\r\n");
+    print_unlock("mem_init done.\r\n");
 }
 
 #define PDE_IDX(addr)   ((addr & 0xffc00000) >> 22)

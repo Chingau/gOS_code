@@ -8,7 +8,7 @@ CFLAGS += -nostdlib	#不需要标准库
 CFLAGS += -fno-stack-protector	#不需要栈保护
 CFLAGS := $(strip ${CFLAGS})
 
-DEBUG := -g
+DEBUG := -g -O0
 HD_IMG_NAME := hd.img
 
 PATHS += oskernel/init

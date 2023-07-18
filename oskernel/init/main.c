@@ -17,13 +17,14 @@ void kernel_main(void)
     console_init();
     gdt_init();
     idt_init();
-    timer_init();
-    //keyboard_init();
     check_memory();
     mem_init();
+    timer_init();
+    //keyboard_init();
     thread_init();
+    console_lock_init();
     
-    printk("hello gos!\n");
+    print_unlock("hello gos!\n");
 
     thread_start("k_thread_a", 31, k_thread_a, "argA");
     thread_start("k_thread_b", 10, k_thread_b, "argB");

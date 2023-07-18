@@ -18,7 +18,7 @@ static void create_code_gdt_item_r3(int gdt_index, int base, int limit)
 {
     //实模式下已经创建了4个全局描述符，所以前4个不能再用了
     if (gdt_index < 4) {
-        printk("the gdt_index:%d has been used...\n", gdt_index);
+        print_unlock("the gdt_index:%d has been used...\n", gdt_index);
         return;
     }
 
@@ -46,7 +46,7 @@ static void create_data_gdt_item_r3(int gdt_index, int base, int limit)
 {
     //实模式下已经创建了4个全局描述符，所以前4个不能再用了
     if (gdt_index < 4) {
-        printk("the gdt_index:%d has been used...\n", gdt_index);
+        print_unlock("the gdt_index:%d has been used...\n", gdt_index);
         return;
     }
 
@@ -67,7 +67,7 @@ static void create_data_gdt_item_r3(int gdt_index, int base, int limit)
 
 void gdt_init(void)
 {
-    printk("init gdt...\n");
+    print_unlock("init gdt...\n");
 
     __asm__ volatile ("sgdt gdt_ptr;");
     memcpy(&gdt, (char *)gdt_ptr.base, gdt_ptr.limit);

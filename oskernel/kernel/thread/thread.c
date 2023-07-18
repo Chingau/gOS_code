@@ -76,7 +76,7 @@ struct task_struct* thread_start(char *name, uint8_t prio, thread_func *func, vo
 {
     // PCB都位于内核空间，包括用户进程PCB也在内核空间
     struct task_struct *thread = (struct task_struct *)get_kernel_pages(1);
-    printk("%s thread vaddr:0x%08x\r\n", name, thread);
+    print_unlock("%s thread vaddr:0x%08x\r\n", name, thread);
 
     init_thread(thread, name, prio);
     thread_create(thread, func, func_arg);
@@ -135,7 +135,7 @@ void schedule(void)
 
 void thread_init(void)
 {
-    printk("thread init.\r\n");
+    print_unlock("thread init.\r\n");
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
     make_main_thread();

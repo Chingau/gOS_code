@@ -2,6 +2,7 @@
 #define __GOS_THREAD_SYNC_H_
 #include "types.h"
 #include "list.h"
+#include "thread.h"
 
 /* 信号量结构 */
 typedef struct {

@@ -333,7 +333,7 @@ static void keymap_handler(int idt_index)
     if (ch == INV)
         return;
 
-    printk("%c", ch);
+    print_unlock("%c", ch);
 }
 
 void keyboard_init(void)

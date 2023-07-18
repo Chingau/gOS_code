@@ -33,7 +33,7 @@ void sema_down(semaphore_t *psema)
     intr_set_status(old_state);
 }
 
-/* 信号是怪的 up 操作 */
+/* 信号量 up 操作 */
 void sema_up(semaphore_t *psema)
 {
     /* 关中断，保证原子操作 */
@@ -74,13 +74,16 @@ void lock_acquire(lock_t *plock)
 /* 释放锁 plock */
 void lock_release(lock_t *plock)
 {
+    void *pholder = NULL;
+
     ASSERT(plock->holder == running_thread());
     if (plock->holder_repeat_nr > 1) {
         plock->holder_repeat_nr--;
         return;
     }
     ASSERT(plock->holder_repeat_nr == 1);
-    plock->holder == NULL;          //把锁的持有者置空放在V操作之前
+    __asm__("mov [%%eax], %1;" : : "a"(&plock->holder), "b"(pholder));  //下面那条语句CPU没有执行，只能先用这个内联汇编代替一下
+    //plock->holder == NULL;          //把锁的持有者置空放在V操作之前   //该语句CPU没有执行，不知道为什么，导致出错   ？？？？
     plock->holder_repeat_nr = 0;
     sema_up(&plock->semaphore);     //信号量的V操作，原子操作
 }

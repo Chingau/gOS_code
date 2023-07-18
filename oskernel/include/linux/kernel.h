@@ -8,6 +8,8 @@
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 int printk(const char * fmt, ...);
+void console_lock_init(void);
+int print_unlock(const char *fmt, ...);
 
 #endif
 
