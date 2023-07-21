@@ -13,6 +13,9 @@
 #include "types.h"
 #include "io.h"
 #include "interrupt.h"
+#include "ioqueue.h"
+
+ioqueue_t kbd_buf;
 
 #define INV 0 // 不可见字符
 #define CODE_PRINT_SCREEN_DOWN 0xB7
@@ -333,10 +336,15 @@ static void keymap_handler(int idt_index)
     if (ch == INV)
         return;
 
-    print_unlock("%c", ch);
+    if (!ioq_full(&kbd_buf)) {
+        //print_unlock("%c", ch);
+        ioq_putchar(&kbd_buf, ch);
+    }
+    return;
 }
 
 void keyboard_init(void)
 {
+    ioqueue_init(&kbd_buf);
     register_handler(0x21, keymap_handler);
 }
