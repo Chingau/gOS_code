@@ -32,10 +32,10 @@ global interrupt_handler_table
 interrupt_handler_%1:
     %2
     ;以下是保存上下文环境
-    ;push ds
-    ;push es
-    ;push fs
-    ;push gs
+    push ds
+    push es
+    push fs
+    push gs
     pushad
 
     ;如果是从片上进入的中断，除了往从片上发送EOI外，主片上也要发送EOI
@@ -49,19 +49,13 @@ interrupt_handler_%1:
     ;以下是恢复上下文环境
     add esp, 4 ;这里平4个字节的栈是为了让pushad和popad能成对使用，因为在pushad和popad中间多push %1（多压4字节）
     popad
-    ;pop gs
-    ;pop fs
-    ;pop es
-    ;pop ds
+    pop gs
+    pop fs
+    pop es
+    pop ds
     add esp, 4 ;手动跳过错误码
     iret
 %endmacro
-
-; 调试说明
-; 本来最初写的是 进入中断后要压入ds,es,fs,gs这4个寄存器，然后退出中断前要弹出这4个寄存器，但
-; 实际调试时，当执行到 pop ds 时整个系统就会直接重启，百思不得其解；又转念一想，在32位平坦内存模型中
-; ds,es,fs,gs这4个寄存器都是0，所以我认为是否保存这4个寄存器影响不大，所以就形成上面的代码。
-; 这里修改了，对应thread.h中的intr_stack_t结构要相应的改变
 
 INTERRUPT_HANDLER 0x00, ZERO; divide by zero
 INTERRUPT_HANDLER 0x01, ZERO; debug

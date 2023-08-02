@@ -112,19 +112,6 @@ setup_page:
 turn_on_page:
     ;先保存未开启分页机制下的gdt表
     sgdt [gdt_ptr]
-    ;获取到gdt表在内存中的起始地址，低2字节是GDT界限，所以要加2
-    mov ebx, [gdt_ptr + 2]
-
-    ;GDT的第0项为全0,跳过不修改，所以esi从1开始
-    mov esi, 1
-    mov cx, 3
-.modify_gdt_item_base:
-    ;修改GDT中每项的段基址，即从0xc000000开始
-    ;esi*8代表GDT表中的每一项占8B
-    ;+4代表偏移到GDT表中每项的高4个字节
-    or dword [ebx + esi*8 + 4], 0xc0000000
-    inc esi
-    loop .modify_gdt_item_base
 
     ;修改gdt在内存中的起始地址
     add dword [gdt_ptr + 2], 0xc0000000

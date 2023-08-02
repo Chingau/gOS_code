@@ -36,10 +36,10 @@ typedef struct {
     uint32_t edx;
     uint32_t ecx;
     uint32_t eax;
-    // uint32_t gs;
-    // uint32_t fs;
-    // uint32_t es;
-    // uint32_t ds;
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t es;
+    uint32_t ds;
     /* 以下参数是CPU由低特权级进入高特权级时压入 */
     uint32_t err_code;      //err_code会被压入到eip之后
     void (*eip)(void);
