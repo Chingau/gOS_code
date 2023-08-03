@@ -1,13 +1,9 @@
 ; 0柱面0磁道2扇区
-[ORG 0x500]
-
-[SECTION .data]
+section loader vstart=0x500 ;把下面的代码放到0x500开始的地址处
 KERNEL_BASE_ADDR equ 0x1200
 STACK_TOP_ADDR equ 0x9f000
 ARDS_BUFFER equ 0x1102
 ARDS_NR_BUFFER equ 0x1100   ;配合C语言结构体部分
-ARDS_NR dw 0
-CHECK_BUFFER_OFFER dw 0
 
 TI_GDT equ 000b
 TI_LDT equ 100b
@@ -34,12 +30,17 @@ GDT_B8000:
 GDT_SIZE equ $ - GDT_BASE
 GDT_LIMIT equ GDT_SIZE - 1
 
+    times 60 dq 0       ;此处预留60个描述符的空位
+
 ;gdt指针，前2字节是gdt界限，后4字节是gdt起始地址
 gdt_ptr:
     dw GDT_LIMIT
     dd GDT_BASE
 
-[SECTION .text]
+;以下两个值定义在GDT表后面，因为它们是占空间的，这样GDT表就是[0x500]这个地址处
+ARDS_NR dw 0
+CHECK_BUFFER_OFFER dw 0
+
 [BITS 16]
 global setup_start
 setup_start:

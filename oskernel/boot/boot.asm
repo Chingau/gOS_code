@@ -20,7 +20,7 @@ boot_start:
     call print
     xchg bx, bx
 
-    jmp SETUP_MAIN_ADDR         ;移交控制权
+    jmp SETUP_MAIN_ADDR+4*8 + 60*8 + 6 + 2+2         ;移交控制权, 后面那串数字是跳转到setup.asm文件中的setup_start标号处运行，这样才能保存GDT表的起始地址是0x500
 
 ;------------------------------------------------;
 ;读硬盘函数
