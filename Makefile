@@ -17,6 +17,7 @@ PATHS += oskernel/kernel/chr_drv
 PATHS += oskernel/kernel/thread
 PATHS += oskernel/lib
 PATHS += oskernel/mm
+PATHS += oskernel/userprog
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
 OBJS := $(patsubst %.c, %.o, $(FILES))
 
@@ -33,7 +34,7 @@ all: oskernel/boot/boot.o oskernel/boot/setup.o oskernel/system.bin
 	bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat oskernel/$(HD_IMG_NAME)
 	dd if=oskernel/boot/boot.o of=oskernel/$(HD_IMG_NAME) bs=512 seek=0 count=1 conv=notrunc
 	dd if=oskernel/boot/setup.o of=oskernel/$(HD_IMG_NAME) bs=512 seek=1 count=2 conv=notrunc
-	dd if=oskernel/system.bin of=oskernel/$(HD_IMG_NAME) bs=512 seek=3 count=60 conv=notrunc
+	dd if=oskernel/system.bin of=oskernel/$(HD_IMG_NAME) bs=512 seek=3 count=80 conv=notrunc
 
 oskernel/system.bin:oskernel/kernel.bin
 	objcopy -O binary oskernel/kernel.bin $@

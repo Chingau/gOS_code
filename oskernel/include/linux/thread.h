@@ -6,6 +6,7 @@
 #define __GOS_OSKERNEL_THREAD_H__
 #include "types.h"
 #include "list.h"
+#include "mm.h"
 
 typedef void thread_func(void *);
 
@@ -62,13 +63,11 @@ typedef struct {
     uint32_t ebx;
     uint32_t edi;
     uint32_t esi;
-
     /*
      线程第一次执行时，eip指向待调用的函数 kernel_thread
      其它时候，eip是指向 switch_to 的返回地址
     */
     void (*eip)(thread_func *func, void *func_arg);
-
     /* 以下参数仅供线程第一次被调试上CPU运行时使用 */
     void *unused_retaddr;       //此参数只为占位置充当函数返回地址
     thread_func *func;
@@ -78,17 +77,21 @@ typedef struct {
 
 /* 进程或线程的 PCB */
 struct task_struct {
-    uint32_t *self_kstack;      //各内核线程都用自己的内核栈  
-    task_state_t status;        //线程状态
-    char name[16];              //线程名
-    uint8_t priority;           //线程优先级
-    uint8_t ticks;              //每次在处理器上执行的时间嘀嗒数
-    uint32_t elapsed_ticks;     //此任务自上CPU运行至今占用了多少CPU嘀嗒数，也就是执行了多长时间
+    uint32_t *self_kstack;          //各内核线程都用自己的内核栈  
+    task_state_t status;            //线程状态
+    char name[16];                  //线程名
+    uint8_t priority;               //线程优先级
+    uint8_t ticks;                  //每次在处理器上执行的时间嘀嗒数
+    uint32_t elapsed_ticks;         //此任务自上CPU运行至今占用了多少CPU嘀嗒数，也就是执行了多长时间
     struct list_elem general_tag;   //用于添加到就绪队列中
     struct list_elem all_list_tag;  //用于添加到所有队列中
-    uint32_t *pgdir;            //进程自己的页表的虚拟地址，线程此值为NULL
-    uint32_t stack_magic;       //栈的边界标记，用于检测栈的溢出
+    uint32_t *pgdir;                //进程自己的页表的虚拟地址，线程此值为NULL
+    virtual_addr_t userprog_vaddr;  //用户进程的虚拟地址，用它来跟踪用户空间虚拟地址的分配情况
+    uint32_t stack_magic;           //栈的边界标记，用于检测栈的溢出
 };
+
+extern struct list thread_ready_list;          //就绪队列
+extern struct list thread_all_list;            //所有任务队列
 
 struct task_struct* thread_start(char *name, uint8_t prio, thread_func *func, void *func_arg);
 struct task_struct *running_thread(void);
@@ -96,5 +99,7 @@ void schedule(void);
 void thread_init(void);
 void thread_block(task_state_t stat);
 void thread_unblock(struct task_struct *pthread);
+void init_thread(struct task_struct* pthread, char *name, uint8_t prio);
+void thread_create(struct task_struct* pthread, thread_func *function, void *arg);
 
 #endif

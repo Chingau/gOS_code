@@ -45,7 +45,11 @@ interrupt_handler_%1:
 
     push %1
     call [intr_table + %1*4]
+    jmp intr_exit
+%endmacro
 
+global intr_exit
+intr_exit:
     ;以下是恢复上下文环境
     add esp, 4 ;这里平4个字节的栈是为了让pushad和popad能成对使用，因为在pushad和popad中间多push %1（多压4字节）
     popad
@@ -54,8 +58,7 @@ interrupt_handler_%1:
     pop es
     pop ds
     add esp, 4 ;手动跳过错误码
-    iret
-%endmacro
+    iretd
 
 INTERRUPT_HANDLER 0x00, ZERO; divide by zero
 INTERRUPT_HANDLER 0x01, ZERO; debug

@@ -1,4 +1,6 @@
 [SECTION .data]
+gdt_ptr_tmp dd 0
+
 ;页目录项起始位置
 PAGE_DIR_TABLE_POS equ 0x100000
 ;------页表相关属性
@@ -11,7 +13,6 @@ PG_US_U     equ 100b
 [SECTION .text]
 [BITS 32]
 extern kernel_main
-extern gdt_ptr
 global _start
 
 _start:
@@ -111,10 +112,10 @@ setup_page:
 ;开启分页机制
 turn_on_page:
     ;先保存未开启分页机制下的gdt表
-    sgdt [gdt_ptr]
+    sgdt [gdt_ptr_tmp]
 
     ;修改gdt在内存中的起始地址
-    add dword [gdt_ptr + 2], 0xc0000000
+    add dword [gdt_ptr_tmp + 2], 0xc0000000
     ;记得同时修改栈顶指针
     add esp, 0xc0000000
 
@@ -126,7 +127,7 @@ turn_on_page:
     or eax, 0x80000000
     mov cr0, eax
 
-    lgdt [gdt_ptr]
+    lgdt [gdt_ptr_tmp]
     ret
 
 enter_c_world:

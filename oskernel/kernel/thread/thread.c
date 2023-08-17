@@ -4,8 +4,8 @@
 #include "kernel.h"
 #include "interrupt.h"
 #include "debug.h"
-
-#define PG_SIZE 4096
+#include "global.h"
+#include "userprog.h"
 
 extern void switch_to(struct task_struct *curr, struct task_struct *next);
 
@@ -29,7 +29,7 @@ static void kernel_thread(thread_func *function, void *arg)
     function(arg);
 }
 
-static void init_thread(struct task_struct* pthread, char *name, uint8_t prio)
+void init_thread(struct task_struct* pthread, char *name, uint8_t prio)
 {
     memset(pthread, 0, sizeof(*pthread));
     strcpy(pthread->name, name);
@@ -43,11 +43,12 @@ static void init_thread(struct task_struct* pthread, char *name, uint8_t prio)
     pthread->priority = prio;
     pthread->ticks = prio;
     pthread->elapsed_ticks = 0;
-    pthread->pgdir = NULL;      //只有进程才有自己的页表，线程没有
+    pthread->pgdir = NULL;      //只有进程才有自己的页表(后续分配)，线程没有
     pthread->stack_magic = 0x20000324;
 }
 
-static void thread_create(struct task_struct* pthread, thread_func *function, void *arg)
+/* 该函数只有在首次任务调度时才会被执行 */
+void thread_create(struct task_struct* pthread, thread_func *function, void *arg)
 {
     pthread->self_kstack -= sizeof(intr_stack_t);   //预留出中断栈的空间
     pthread->self_kstack -= sizeof(thread_stack_t); //预留出线程栈的空间
@@ -130,6 +131,8 @@ void schedule(void)
     thread_tag = list_pop(&thread_ready_list);
     struct task_struct *next = elem2entry(struct task_struct, general_tag, thread_tag);
     next->status = TASK_RUNNING;
+    //激活任务页表等
+    process_activate(next);
     switch_to(curr, next);
 }
 
