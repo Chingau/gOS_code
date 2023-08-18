@@ -10,6 +10,8 @@
 #include "keyboard.h"
 #include "tss.h"
 #include "userprog.h"
+#include "syscall_int.h"
+#include "syscall.h"
 
 void k_thread_a(void *);
 void k_thread_b(void *);
@@ -30,6 +32,7 @@ void kernel_main(void)
     keyboard_init();
     thread_init();
     console_lock_init();
+    syscall_init();
     print_unlock("hello gos!\n");
 
     //创建两个内核线程
@@ -68,13 +71,13 @@ void k_thread_b(void *arg)
 void u_prog_a(void)
 {
     while (1) {
-        test_var_a++;
+        test_var_a = getpid();;
     }
 }
 
 void u_prog_b(void)
 {
     while (1) {
-        test_var_b++;
+        test_var_b = getpid();;
     }
 }

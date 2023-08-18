@@ -77,7 +77,8 @@ typedef struct {
 
 /* 进程或线程的 PCB */
 struct task_struct {
-    uint32_t *self_kstack;          //各内核线程都用自己的内核栈  
+    uint32_t *self_kstack;          //各内核线程都用自己的内核栈
+    pid_t pid;
     task_state_t status;            //线程状态
     char name[16];                  //线程名
     uint8_t priority;               //线程优先级

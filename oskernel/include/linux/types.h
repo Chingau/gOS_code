@@ -30,4 +30,6 @@ typedef int int32_t;
 typedef short int16_t;
 typedef char int8_t;
 
+typedef int16_t pid_t;
+
 #endif

@@ -16,6 +16,7 @@ PATHS += oskernel/kernel
 PATHS += oskernel/kernel/chr_drv
 PATHS += oskernel/kernel/thread
 PATHS += oskernel/lib
+PATHS += oskernel/lib/user
 PATHS += oskernel/mm
 PATHS += oskernel/userprog
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
@@ -28,6 +29,8 @@ ASM_OBJS := $(patsubst %.asm, %.o, $(ASM_FILES))
 INCS += oskernel/include
 INCS += oskernel/include/asm
 INCS += oskernel/include/linux
+INCS += oskernel/lib/user
+INCS += oskernel/userprog
 INC_PATHS := $(foreach path, $(INCS), $(patsubst %, -I%, $(path)))
 
 all: oskernel/boot/boot.o oskernel/boot/setup.o oskernel/system.bin

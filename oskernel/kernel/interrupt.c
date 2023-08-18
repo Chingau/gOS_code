@@ -4,9 +4,10 @@
 #include "head.h"
 #include "io.h"
 
-#define INTERRUPT_TABLE_SIZE (0x2f + 1)
+#define INTERRUPT_TABLE_SIZE (0x80 + 1)
 
 extern int interrupt_handler_table[INTERRUPT_TABLE_SIZE];
+extern int syscall_handler(void);
 
 interrupt_gate_t idt[INTERRUPT_TABLE_SIZE] = {0};
 xdt_ptr_t idt_ptr;
@@ -96,8 +97,9 @@ static void idt_desc_init(void)
 
     interrupt_gate_t *item = NULL;
     int handler;
+    int index;
 
-    for (int index = 0; index < INTERRUPT_TABLE_SIZE; ++index) {
+    for (index = 0; index < INTERRUPT_TABLE_SIZE; ++index) {
         item = (interrupt_gate_t *)&idt[index];
         handler = interrupt_handler_table[index];
         item->offset0 = handler & 0xffff;
@@ -109,6 +111,17 @@ static void idt_desc_init(void)
         item->dpl = 0;              //内核态
         item->present = 1;           //有效
     }
+
+    item = (interrupt_gate_t *)&idt[0x80];
+    handler = (int)syscall_handler;
+    item->offset0 = handler & 0xffff;
+    item->offset1 = (handler >> 16) & 0xffff;
+    item->selector = 1 << 3;     //代码段
+    item->reserved = 0;
+    item->type = 0b1110;        //中断门
+    item->segment = 0;          //系统段
+    item->dpl = 3;              //用户态
+    item->present = 1;           //有效
 
     idt_ptr.base = (int)idt;
     idt_ptr.limit = sizeof(idt) - 1;

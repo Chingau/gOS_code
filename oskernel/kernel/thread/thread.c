@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "global.h"
 #include "userprog.h"
+#include "sync.h"
 
 extern void switch_to(struct task_struct *curr, struct task_struct *next);
 
@@ -13,6 +14,10 @@ struct task_struct *main_thread;        //主线程PCB
 struct list thread_ready_list;          //就绪队列
 struct list thread_all_list;            //所有任务队列
 static struct list_elem *thread_tag;
+lock_t pid_lock;                   //分配pid锁
+
+//函数声明
+static pid_t allocate_pid(void);
 
 /* 获取当前线程PCB指针 */
 struct task_struct *running_thread(void)
@@ -32,6 +37,7 @@ static void kernel_thread(thread_func *function, void *arg)
 void init_thread(struct task_struct* pthread, char *name, uint8_t prio)
 {
     memset(pthread, 0, sizeof(*pthread));
+    pthread->pid = allocate_pid();
     strcpy(pthread->name, name);
     if (pthread == main_thread) {
         pthread->status = TASK_RUNNING; //main函数就是主线程，此时它正在运行
@@ -141,6 +147,7 @@ void thread_init(void)
     print_unlock("thread init.\r\n");
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
+    lock_init(&pid_lock);
     make_main_thread();
 }
 
@@ -172,4 +179,14 @@ void thread_unblock(struct task_struct *pthread)
         pthread->status = TASK_READY;
     }
     intr_set_status(old_stat);
+}
+
+/* 分配pid */
+static pid_t allocate_pid(void)
+{
+    static pid_t next_pid = 0;
+    lock_acquire(&pid_lock);
+    next_pid++;
+    lock_release(&pid_lock);
+    return next_pid;
 }
