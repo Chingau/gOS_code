@@ -12,14 +12,12 @@
 #include "userprog.h"
 #include "syscall_int.h"
 #include "syscall.h"
+#include "stdio.h"
 
 void k_thread_a(void *);
 void k_thread_b(void *);
 void u_prog_a(void);
 void u_prog_b(void);
-
-int test_var_a = 0;
-int test_var_b = 0;
 
 void kernel_main(void)
 {
@@ -44,6 +42,7 @@ void kernel_main(void)
     process_execute(u_prog_b, "user_prog_b", 5);
 
     intr_enable();
+    printk("main pid:%d\n", sys_getpid());
     while (1);
     //BOCHS_DEBUG_MAGIC
 }
@@ -53,31 +52,27 @@ void k_thread_a(void *arg)
 {
     char *para = arg;
 
-    while (1) {
-        printk("%s:0x%08x\n", para, test_var_a);
-    }
+    printk("%s pid:%d\n", para, sys_getpid());
+    while (1);
 }
 
 void k_thread_b(void *arg)
 {
     char *para = arg;
 
-    while (1) {
-        printk("%s:0x%08x\n", para, test_var_b);
-    }
+    printk("%s pid:%d\n", para, sys_getpid());
+    while (1);
 }
 
 //测试用户进程
 void u_prog_a(void)
 {
-    while (1) {
-        test_var_a = getpid();;
-    }
+    printf("userA pid:%d\n", getpid());
+    while (1);
 }
 
 void u_prog_b(void)
 {
-    while (1) {
-        test_var_b = getpid();;
-    }
+    printf("userB pid:%d\n", getpid());
+    while (1);
 }

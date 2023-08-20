@@ -29,6 +29,7 @@ ASM_OBJS := $(patsubst %.asm, %.o, $(ASM_FILES))
 INCS += oskernel/include
 INCS += oskernel/include/asm
 INCS += oskernel/include/linux
+INCS += oskernel/lib
 INCS += oskernel/lib/user
 INCS += oskernel/userprog
 INC_PATHS := $(foreach path, $(INCS), $(patsubst %, -I%, $(path)))
