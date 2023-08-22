@@ -4,9 +4,8 @@
 #include "types.h"
 #include "string.h"
 
-#define syscall_nr  32
 typedef void* syscall;
-syscall syscall_table[syscall_nr];
+syscall syscall_table[SYS_MAX_NR];
 
 /*
  * 返回当前任务的pid

@@ -5,6 +5,7 @@
 #define __GOS_OSKERNEL_MM_H__
 #include "bitmap.h"
 #include "types.h"
+#include "list.h"
 
 typedef struct {
     unsigned int base_addr_low;
@@ -38,6 +39,18 @@ enum pool_flags {
 #define PG_US_S 0       // U/S属性位值，系统级
 #define PG_US_U 4       // U/S属性位值，用户级
 
+/* 内存块 */
+typedef struct {
+    struct list_elem free_elem;
+} mem_block_t;
+/* 内存块描述符 */
+typedef struct {
+    uint32_t block_size;            //内存块大小
+    uint32_t blocks_per_arena;      //本arena中可容纳此mem_block的数量
+    struct list free_list;          //目前可用的mem_block链表
+} mem_block_desc_t;
+#define MEM_DESC_CNT    7           //内存块描述符个数
+
 extern struct pool kernel_pool, user_pool;
 
 void mem_init(void);
@@ -46,6 +59,8 @@ void *get_kernel_pages(uint32_t pg_cnt);
 void *get_user_pages(uint32_t pg_cnt);
 void *get_a_page(enum pool_flags pf, uint32_t vaddr);
 uint32_t addr_v2p(uint32_t vaddr);
+void block_desc_init(mem_block_desc_t *desc_array);
+void *sys_malloc(uint32_t size);
 
 #endif
 

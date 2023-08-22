@@ -16,8 +16,6 @@
 
 void k_thread_a(void *);
 void k_thread_b(void *);
-void u_prog_a(void);
-void u_prog_b(void);
 
 void kernel_main(void)
 {
@@ -37,12 +35,7 @@ void kernel_main(void)
     thread_start("consumer_a", 10, k_thread_a, "argA");
     thread_start("consumer_b", 10, k_thread_b, "argB");
 
-    //创建两个用户进程
-    process_execute(u_prog_a, "user_prog_a", 20);
-    process_execute(u_prog_b, "user_prog_b", 5);
-
     intr_enable();
-    printk("main pid:%d\n", sys_getpid());
     while (1);
     //BOCHS_DEBUG_MAGIC
 }
@@ -51,28 +44,15 @@ void kernel_main(void)
 void k_thread_a(void *arg)
 {
     char *para = arg;
-
-    printk("%s pid:%d\n", para, sys_getpid());
+    void *addr = sys_malloc(33);
+    printk("%s pid:%d, sys_malloc addr:%08x\n", para, sys_getpid(), (int)addr);
     while (1);
 }
 
 void k_thread_b(void *arg)
 {
     char *para = arg;
-
-    printk("%s pid:%d\n", para, sys_getpid());
-    while (1);
-}
-
-//测试用户进程
-void u_prog_a(void)
-{
-    printf("userA pid:%d\n", getpid());
-    while (1);
-}
-
-void u_prog_b(void)
-{
-    printf("userB pid:%d\n", getpid());
+    void *addr = sys_malloc(63);
+    printk("%s pid:%d, sys_malloc addr:%08x\n", para, sys_getpid(), (int)addr);
     while (1);
 }
