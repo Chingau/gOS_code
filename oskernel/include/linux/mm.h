@@ -61,6 +61,7 @@ void *get_a_page(enum pool_flags pf, uint32_t vaddr);
 uint32_t addr_v2p(uint32_t vaddr);
 void block_desc_init(mem_block_desc_t *desc_array);
 void *sys_malloc(uint32_t size);
+void sys_free(void *ptr);
 
 #endif
 

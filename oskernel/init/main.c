@@ -40,19 +40,102 @@ void kernel_main(void)
     //BOCHS_DEBUG_MAGIC
 }
 
+/*
+    当两个线程运行完后，内核的位图值前后不变才是正常的
+*/
 
 void k_thread_a(void *arg)
 {
     char *para = arg;
-    void *addr = sys_malloc(33);
-    printk("%s pid:%d, sys_malloc addr:%08x\n", para, sys_getpid(), (int)addr);
+    void *addr1;
+    void *addr2;
+    void *addr3;
+    void *addr4;
+    void *addr5;
+    void *addr6;
+    void *addr7;
+    int max = 1000;
+
+    printk("%s pid:%d, sys_malloc addr:%08x\n", para, sys_getpid());
+    while (max-- > 0) {
+        int size = 128;
+        addr1 = sys_malloc(size);
+        size *= 2;
+        addr2 = sys_malloc(size);
+        size *= 2;
+        addr3 = sys_malloc(size);
+        sys_free(addr1);
+        addr4 = sys_malloc(size);
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        addr5 = sys_malloc(size);
+        addr6 = sys_malloc(size);
+        sys_free(addr5);
+        size *= 2;
+        addr7 = sys_malloc(size);
+        sys_free(addr7);
+        sys_free(addr6);
+        sys_free(addr4);
+        sys_free(addr3);
+        sys_free(addr2);
+    }
+    printk("thread a end.\n");
     while (1);
 }
 
 void k_thread_b(void *arg)
 {
     char *para = arg;
-    void *addr = sys_malloc(63);
-    printk("%s pid:%d, sys_malloc addr:%08x\n", para, sys_getpid(), (int)addr);
+    void *addr1;
+    void *addr2;
+    void *addr3;
+    void *addr4;
+    void *addr5;
+    void *addr6;
+    void *addr7;
+    void *addr8;
+    int max = 100;
+
+    printk("%s pid:%d, sys_malloc addr:%08x\n", para, sys_getpid());
+    while (max-- > 0) {
+        int size = 9;
+        addr1 = sys_malloc(size);
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        addr2 = sys_malloc(size);
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        addr3 = sys_malloc(size);
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        addr4 = sys_malloc(size);
+        addr5 = sys_malloc(size);
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        addr6 = sys_malloc(size);
+        sys_free(addr1);
+        sys_free(addr2);
+        sys_free(addr3);
+        sys_free(addr4);
+        sys_free(addr5);
+        sys_free(addr6);
+        size *= 2;
+        size *= 2;
+        size *= 2;
+        addr7 = sys_malloc(size);
+        addr8 = sys_malloc(size);
+        sys_free(addr7);
+        sys_free(addr8);
+    }  
+    printk("thread b end.\n");
     while (1);
 }
