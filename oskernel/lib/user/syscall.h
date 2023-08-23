@@ -3,12 +3,16 @@
 #include "types.h"
 
 enum SYSCALL_NR {
-    SYS_GETPID = 0,
-    SYS_WRITE = 1,
+    SYS_GETPID      = 0,
+    SYS_WRITE       = 1,
+    SYS_MALLOC      = 2,
+    SYS_FREE        = 3,
     SYS_MAX_NR
 };
 
 uint32_t getpid(void);
 uint32_t write(char *str);
+void *malloc(uint32_t size);
+void free(void *ptr);
 
 #endif
