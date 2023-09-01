@@ -103,5 +103,6 @@ void thread_block(task_state_t stat);
 void thread_unblock(struct task_struct *pthread);
 void init_thread(struct task_struct* pthread, char *name, uint8_t prio);
 void thread_create(struct task_struct* pthread, thread_func *function, void *arg);
+void thread_yield(void);
 
 #endif

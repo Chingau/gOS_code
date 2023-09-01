@@ -19,6 +19,7 @@ PATHS += oskernel/lib
 PATHS += oskernel/lib/user
 PATHS += oskernel/mm
 PATHS += oskernel/userprog
+PATHS += oskernel/kernel/device
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
 OBJS := $(patsubst %.c, %.o, $(FILES))
 
@@ -32,10 +33,11 @@ INCS += oskernel/include/linux
 INCS += oskernel/lib
 INCS += oskernel/lib/user
 INCS += oskernel/userprog
+INCS += oskernel/kernel/device
 INC_PATHS := $(foreach path, $(INCS), $(patsubst %, -I%, $(path)))
 
 all: oskernel/boot/boot.o oskernel/boot/setup.o oskernel/system.bin
-	bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat oskernel/$(HD_IMG_NAME)
+	#bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat oskernel/$(HD_IMG_NAME) #硬盘只用创建一次
 	dd if=oskernel/boot/boot.o of=oskernel/$(HD_IMG_NAME) bs=512 seek=0 count=1 conv=notrunc
 	dd if=oskernel/boot/setup.o of=oskernel/$(HD_IMG_NAME) bs=512 seek=1 count=2 conv=notrunc
 	dd if=oskernel/system.bin of=oskernel/$(HD_IMG_NAME) bs=512 seek=3 count=80 conv=notrunc
@@ -65,7 +67,7 @@ $(ASM_OBJS):$(ASM_FILES)
 CLEANS := $(shell find -name "*.bin")
 CLEANS += $(shell find -name "*.map")
 CLEANS += $(shell find -name "*.o")
-CLEANS += $(shell find -name "*.img")
+#CLEANS += $(shell find -name "*.img")
 
 clean:
 	$(RM) $(CLEANS)
@@ -74,10 +76,11 @@ bochs:
 	bochs -q -f bochsrc
 
 qemug: all
-	qemu-system-x86_64 -m 32M -hda oskernel/$(HD_IMG_NAME) -S -s
+	qemu-system-x86_64 -m 32M -hda oskernel/$(HD_IMG_NAME) -hdb oskernel/hd80M.img -S -s
 
 qemu: all
 	qemu-system-i386 \
 	-m 32M \
 	-boot c \
-	-hda oskernel/$(HD_IMG_NAME)
+	-hda oskernel/$(HD_IMG_NAME) \
+	-hdb oskernel/hd80M.img

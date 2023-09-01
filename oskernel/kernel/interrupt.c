@@ -149,9 +149,14 @@ static void pic_init(void)
     outb(PIC_S_DATA, 0x28); //ICW2:起始中断向量号为0x28，也就是IR[8-15]为0x28~0x2F
     outb(PIC_S_DATA, 0x02); //ICW3:设置从片连接到主片的IR2引脚
     outb(PIC_S_DATA, 0x01); //ICW4:8086模式，正常   
-    //打开主片上IR0,也就是目前只接受时钟产生的中断
-    outb(PIC_M_DATA, 0xfc); //0xfd只开键盘中断，0xfe只开时钟中断，0xfc键盘/时钟中断都打开
-    outb(PIC_S_DATA, 0xff);
+ 
+    /*
+      IRQ2用于级联从片，必须打开，否则无法响应从片上的中断。
+      主片上打开的中断有IRQ0的时钟，IRQ1的键盘和级联从片的IRQ2，其他全部关闭
+    */
+    outb(PIC_M_DATA, 0xf8);
+    //打开从片上的IRQ14，此引脚接收硬盘控制器的中断
+    outb(PIC_S_DATA, 0xbf);
 }
 
 

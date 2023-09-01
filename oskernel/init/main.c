@@ -13,6 +13,7 @@
 #include "syscall_int.h"
 #include "syscall.h"
 #include "stdio.h"
+#include "ide.h"
 
 void k_thread_a(void *);
 void k_thread_b(void *);
@@ -31,7 +32,8 @@ void kernel_main(void)
     thread_init();
     console_lock_init();
     syscall_init();
-    print_unlock("hello gos!\n");
+    ide_init();
+    print_unlock("hello gos...\n");
 
     //创建两个内核线程
     thread_start("consumer_a", 10, k_thread_a, "argA");

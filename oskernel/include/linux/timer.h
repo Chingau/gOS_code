@@ -4,5 +4,6 @@
 #define HZ 100  //每秒时钟中断的次数，中断号0x21
 
 void timer_init(void);
+void mtime_sleep(uint32_t m_seconds);
 
 #endif

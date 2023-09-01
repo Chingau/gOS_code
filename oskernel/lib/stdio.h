@@ -3,5 +3,6 @@
 #include "types.h"
 
 uint32_t printf(const char *format, ...);
+int sprintf(char *str, const char *format, ...);
 
 #endif
