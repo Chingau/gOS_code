@@ -7,6 +7,52 @@
 #include "string.h"
 #include "debug.h"
 
+struct partition *curr_part; //默认情况下操作的是哪个分区 
+
+/* 在分区链表中找到名为part_name的分区，并将其指针赋值给curr_part */
+static bool mount_partition(struct list_elem *pelem, int arg)
+{
+    char *part_name = (char *)arg;
+    struct partition *part = elem2entry(struct partition, part_tag, pelem);
+
+    if (!strcmp(part->name, part_name)) {
+        curr_part = part;
+        struct disk *hd = curr_part->my_disk;
+
+        /* sb_buf用来存储从硬盘上读入的超级块 */
+        struct super_block *sb_buf = (struct super_block *)sys_malloc(SECTOR_SIZE);
+        if (sb_buf == NULL)
+            PANIC("alloc memory failed!");
+        
+        /* 读入超级块 */
+        ide_read(hd, curr_part->start_lba + 1, sb_buf, 1);
+        curr_part->sb = sb_buf;
+
+        /* 将硬盘上的块位图读入到内存 */
+        curr_part->block_bitmap.bits = (uint8_t *)sys_malloc(sb_buf->block_bitmap_sects * SECTOR_SIZE);
+        if (curr_part->block_bitmap.bits == NULL)
+            PANIC("alloc memory failed!");
+        curr_part->block_bitmap.btmp_bytes_len = sb_buf->block_bitmap_sects * SECTOR_SIZE;
+
+        /* 从硬盘上读入块位图到分区的block_bitmap.bits */
+        ide_read(hd, sb_buf->block_bitmap_lba, curr_part->block_bitmap.bits, sb_buf->block_bitmap_sects);
+
+        /* 将硬盘上的inode位图读入到内存 */
+        curr_part->inode_bitmap.bits = (uint8_t *)sys_malloc(sb_buf->inode_bitmap_secs * SECTOR_SIZE);
+        if (curr_part->inode_bitmap.bits == NULL)
+            PANIC("alloc memory failed!");
+        curr_part->inode_bitmap.btmp_bytes_len = sb_buf->inode_bitmap_secs * SECTOR_SIZE;
+
+        /* 从硬盘上读入inode位图到分区的inode_bitmap.bits */
+        ide_read(hd, sb_buf->inode_bitmap_lba, curr_part->inode_bitmap.bits, sb_buf->inode_bitmap_secs);
+
+        list_init(&curr_part->open_inodes);
+        printk("mount \"%s\" done.\n", part->name);
+        return true;
+    }
+    return false;
+}
+
 /* 格式化分区，也就是初始化分区的元信息，创建文件系统 */
 static void partition_format(struct partition *part)
 {
@@ -183,4 +229,7 @@ void filesys_init(void)
         channel_no++;   //下一通道
     }
     sys_free(sb_buf);
+
+    char default_part[8] = "sdb1";      //默认操作的分区
+    list_traversal(&partition_list, mount_partition, (int)default_part);
 }
