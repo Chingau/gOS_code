@@ -4,6 +4,7 @@
 #include "bitmap.h"
 #include "list.h"
 #include "sync.h"
+#include "super_block.h"
 
 /* 分区表结构 */
 struct partition {
@@ -37,6 +38,9 @@ struct ide_channel {
     semaphore_t disk_done;      //用于阻塞、唤醒驱动程序
     struct disk devices[2];     //一个通道上连接两个硬盘，一主一从
 };
+
+extern uint8_t channel_cnt;
+extern struct ide_channel channels[2];
 
 void ide_init(void);
 void ide_read(struct disk *hd, uint32_t lba, void *buf, uint32_t sec_cnt);

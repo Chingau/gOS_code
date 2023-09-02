@@ -141,7 +141,7 @@ p_mode_start:
     mov esp, STACK_TOP_ADDR
 
     mov ecx, 3  ;从硬盘的第3个扇区开始读
-    mov bl, 80  ;共读取80个扇区
+    mov bl, 254  ;共读取256个扇区
     call read_hd
 
     xchg bx, bx
