@@ -8,6 +8,8 @@
 #include "list.h"
 #include "mm.h"
 
+#define MAX_FILES_OPEN_PRE_PROC 8
+
 typedef void thread_func(void *);
 
 /* 进程或线程的状态 */
@@ -84,6 +86,7 @@ struct task_struct {
     uint8_t priority;               //线程优先级
     uint8_t ticks;                  //每次在处理器上执行的时间嘀嗒数
     uint32_t elapsed_ticks;         //此任务自上CPU运行至今占用了多少CPU嘀嗒数，也就是执行了多长时间
+    int32_t fd_table[MAX_FILES_OPEN_PRE_PROC];      //文件描述符数组
     struct list_elem general_tag;   //用于添加到就绪队列中
     struct list_elem all_list_tag;  //用于添加到所有队列中
     uint32_t *pgdir;                //进程自己的页表的虚拟地址，线程此值为NULL

@@ -51,6 +51,15 @@ void init_thread(struct task_struct* pthread, char *name, uint8_t prio)
     pthread->ticks = prio;
     pthread->elapsed_ticks = 0;
     pthread->pgdir = NULL;      //只有进程才有自己的页表(后续分配)，线程没有
+    //预留标准输入输出
+    pthread->fd_table[0] = 0;
+    pthread->fd_table[1] = 1;
+    pthread->fd_table[2] = 2;
+    uint8_t fd_idx = 3;
+    while (fd_idx < MAX_FILES_OPEN_PRE_PROC) {
+        pthread->fd_table[fd_idx] = -1;
+        fd_idx++;
+    }
     pthread->stack_magic = 0x20000324;
 }
 
