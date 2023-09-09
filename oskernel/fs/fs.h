@@ -16,10 +16,10 @@ enum file_types {
 };
 
 enum oflags {
-    O_RDONLY,           //只读
-    O_WRONLY,           //只写
-    O_RDWR,             //读写
-    O_CREAT = 4,        //创建
+    O_RDONLY    = 0,            //只读
+    O_WRONLY    = 1 << 0,       //只写
+    O_RDWR      = 1 << 1,       //读写
+    O_CREAT     = 1 << 2,       //创建
 };
 
 //用来记录查找文件过程中已找到的上级路径，也就是查找文件过程中"走过的地方"
@@ -34,5 +34,5 @@ extern struct partition *curr_part;
 void filesys_init(void);
 int32_t path_depth_cnt(char *pathname);
 int32_t sys_open(const char *pathname, uint8_t flags);
-
+int32_t sys_close(int32_t fd);
 #endif

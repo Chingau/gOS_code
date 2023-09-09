@@ -70,7 +70,7 @@ static void partition_format(struct partition *part)
     //块位图占据的扇区数
     uint32_t block_bitmap_sects;
     block_bitmap_sects = DIV_ROUND_UP(free_sects, BITS_PER_SECTOR);
-    uint32_t block_bitmap_bit_len = free_sects - block_bitmap_sects;
+    uint32_t block_bitmap_bit_len = free_sects - block_bitmap_sects;    //有多少个空闲块就需要有多少个bit来管理
     block_bitmap_sects = DIV_ROUND_UP(block_bitmap_bit_len, BITS_PER_SECTOR);
 
     //超始块初始化
@@ -229,7 +229,7 @@ static int search_file(const char *pathname, struct path_search_record *searched
         searched_record->parent_dir = &root_dir;
         searched_record->file_type = FT_DIRECTORY;
         searched_record->searched_path[0] = 0;
-        return 0;
+        return root_dir.inode->i_no;    // 0
     }
 
     uint32_t path_len = strlen(pathname);
@@ -350,7 +350,7 @@ void filesys_init(void)
 */
 int32_t sys_open(const char *pathname, uint8_t flags)
 {
-    //对目录要用dir_open，这里只有open文件
+    //对目录要用dir_open，这里只能open文件
     if (pathname[strlen(pathname) - 1] == '/') {
         printk("can't open a directory %s\n", pathname);
         return -1;
@@ -388,7 +388,7 @@ int32_t sys_open(const char *pathname, uint8_t flags)
         printk("in path %s, file %s is't exist.\n", searched_record.searched_path, (strrchr(searched_record.searched_path, '/') + 1));
         dir_close(searched_record.parent_dir);
         return -1;
-    } else if (found && flags & O_CREAT) {  //若要创建的文件已存在
+    } else if (found && (flags & O_CREAT)) {  //若要创建的文件已存在
         printk("%s has already exist.\n", pathname);
         dir_close(searched_record.parent_dir);
         return -1;
@@ -400,9 +400,33 @@ int32_t sys_open(const char *pathname, uint8_t flags)
             fd = file_create(searched_record.parent_dir, (strrchr(pathname, '/') + 1), flags);
             dir_close(searched_record.parent_dir);
         break;
-        //其余为打开文件
+        
+        //其余为打开已存在的文件
+        default:
+            fd = file_open(inode_no, flags);
+        break;
     }
 
     //此fd是指任务pcb->fd_table数组中的元素下标，并不是指全局file_table中的下标
     return fd;
+}
+
+static uint32_t fd_local2global(uint32_t local_fd)
+{
+    struct task_struct *curr = running_thread();
+    int32_t global_fd = curr->fd_table[local_fd];
+    ASSERT(global_fd >= 0 && global_fd < MAX_FILE_OPEN);
+    return (uint32_t)global_fd;
+}
+
+/* 关闭文件描述符fd指向的文件，成功返回0，失败返回-1 */
+int32_t sys_close(int32_t fd)
+{
+    int32_t ret = -1;
+    if (fd > 2) {
+        uint32_t g_fd = fd_local2global(fd);
+        ret = file_close(&file_table[g_fd]);
+        running_thread()->fd_table[fd] = -1;    //使该文件描述符位置可用
+    }
+    return ret;
 }

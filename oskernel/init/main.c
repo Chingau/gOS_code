@@ -36,7 +36,8 @@ void kernel_main(void)
     ide_init();
     filesys_init();
     print_unlock("hello gos, init done.\n");
-
+    BOCHS_DEBUG_MAGIC
+    
     //创建两个内核线程
     thread_start("consumer_a", 10, k_thread_a, "argA");
     thread_start("consumer_b", 10, k_thread_b, "argB");
@@ -47,6 +48,16 @@ void kernel_main(void)
     intr_enable();
 
     sys_open("/file1", O_CREAT);
+    int fd = sys_open("/file1", O_RDONLY);
+    printk("sys_open fd:%d\n", fd);
+    sys_close(fd);
+    printk("fd close now.\n", fd);
+
+    fd = sys_open("/file2", O_RDONLY);
+    printk("sys_open fd:%d\n", fd);
+    int fd1 = sys_open("/file1", O_RDONLY);
+    printk("sys_open fd:%d\n", fd1);
+
     while (1);
     //BOCHS_DEBUG_MAGIC
 }

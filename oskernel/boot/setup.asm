@@ -54,7 +54,7 @@ setup_start:
 
     mov si, prepare_enter_protected_mode_msg
     call print
-    xchg bx, bx
+    ;xchg bx, bx
 
 ;------------------------------------------------;
 ; 内存检测
@@ -144,7 +144,7 @@ p_mode_start:
     mov bl, 254  ;共读取256个扇区
     call read_hd
 
-    xchg bx, bx
+    ;xchg bx, bx
     jmp SELECTOR_CODE:KERNEL_BASE_ADDR
 
 ;------------------------------------------------;

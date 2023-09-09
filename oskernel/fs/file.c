@@ -4,6 +4,8 @@
 #include "fs.h"
 #include "kernel.h"
 #include "string.h"
+#include "interrupt.h"
+#include "debug.h"
 
 /* 文件表 */
 struct file file_table[MAX_FILE_OPEN];
@@ -112,7 +114,7 @@ int32_t file_create(struct dir *parent_dir, char *filename, uint8_t flag)
 
     uint8_t rollback_step = 0;  //用于操作失败时回滚各资源状态
 
-    //分新文件分配inode
+    //为新文件分配inode
     int32_t inode_no = inode_bitmap_alloc(curr_part);
     if (inode_no == -1) {
         printk("in file_create: allocate inode failed.\n");
@@ -199,4 +201,47 @@ rollback:
     }
     sys_free(io_buf);
     return -1;
+}
+
+/*
+打开编号为inode_no的inode对应的文件，
+若成功则返回文件描述符，否则返回-1
+*/
+int32_t file_open(uint32_t inode_no, uint8_t flag)
+{
+    int fd_idx = get_free_slot_in_global();
+    if (fd_idx == -1) {
+        printk("exceed max open files.\n");
+        return -1;
+    }
+    file_table[fd_idx].fd_inode = inode_open(curr_part, inode_no);
+    file_table[fd_idx].fd_pos = 0;  //每次打开文件要将fd_pos还原为0，即让文件内的指针指向开头
+    file_table[fd_idx].fd_flag = flag;
+    bool *write_deny = &file_table[fd_idx].fd_inode->write_deny;
+
+    if ((flag & O_WRONLY) || (flag & O_RDWR)) {
+        //只要是关于写文件，判断是否有其他进程正写此文件；若是读文件，不考虑write_deny
+        INTR_STATUS_T old_status = intr_disable();
+        if (!(*write_deny)) {
+            *write_deny = true;
+            intr_set_status(old_status);
+        } else {
+            intr_set_status(old_status);
+            printk("file is busy now. try again later.\n");
+            return -1;
+        }
+    }
+
+    //若是读文件或创建文件，则不关注write_deny
+    return pcb_fd_install(fd_idx);
+}
+
+int32_t file_close(struct file *file)
+{
+    if (file == NULL)
+        return -1;
+    file->fd_inode->write_deny = false;
+    inode_close(file->fd_inode);
+    file->fd_inode = NULL;      //使文件结构可用
+    return 0;
 }
