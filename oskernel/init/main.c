@@ -1,5 +1,6 @@
 #include "kernel.h"
 #include "traps.h"
+#include "string.h"
 #include "tty.h"
 #include "mm.h"
 #include "system.h"
@@ -47,12 +48,27 @@ void kernel_main(void)
 
     intr_enable();
 
-    //sys_open("/file1", O_CREAT);
     int fd = sys_open("/file1", O_RDWR);
-    printk("sys_open fd:%d\n", fd);
-    printk("written:%d\n", sys_write(fd, "hello,world\n", 12));
+    printf("open /file1, fd:%d\n", fd);
+    char buf[64] = {0};
+    int read_bytes = sys_read(fd, buf, 6);
+    printf("1_read %d bytes: %s\n", read_bytes, buf);
+
+    memset(buf, 0, 64);
+    read_bytes = sys_read(fd, buf, 8);
+    printf("2_read %d bytes: %s\n", read_bytes, buf);
+
+    memset(buf, 0, 64);
+    read_bytes = sys_read(fd, buf, 6);
+    printf("3_read %d bytes: %s\n", read_bytes, buf);
     sys_close(fd);
-    printk("fd close now.\n", fd);
+
+    fd = sys_open("/file1", O_RDWR);
+    memset(buf, 0, 64);
+    read_bytes = sys_read(fd, buf, 12);
+    printf("4_read %d bytes: %s\n", read_bytes, buf);
+    sys_close(fd);
+
     while (1);
     //BOCHS_DEBUG_MAGIC
 }
