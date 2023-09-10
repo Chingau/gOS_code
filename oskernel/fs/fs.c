@@ -474,3 +474,40 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t count)
     uint32_t g_fd = fd_local2global(fd);
     return file_read(&file_table[g_fd], buf, count);
 }
+
+/*
+    重置用于文件读写操作的偏移指针
+    成功时返回新的偏移量，出错时返回-1
+*/
+int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence)
+{
+    if (fd < 0) {
+        printk("%d[%d]: fd error.\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+    ASSERT(whence > 0 && whence < 4);
+    uint32_t g_fd = fd_local2global(fd);
+    struct file *pf = &file_table[g_fd];
+    int32_t new_pos = 0;        //新的偏移量必须位于文件大小之内
+    int32_t file_size = (int32_t)pf->fd_inode->i_size;
+
+    switch (whence) {
+        case SEEK_SET:  //offset的参照物是文件开始处，也就是将读写指针设置为距文件开头偏移offset个字节处
+            new_pos = offset;
+        break;
+
+        case SEEK_CUR:  //offset的参照物是当前读写位置，也就是将读写位置指针设置为当前位置+offset
+            new_pos = (int32_t)pf->fd_pos + offset;
+        break;
+
+        case SEEK_END:  //offset的参照物是文件尺寸大小，即文件最后一个字节的下一个字节，也就是将读写位置指针设置为文件尺寸+offset
+            new_pos = file_size + offset;
+        break;
+    }
+
+    if (new_pos < 0 || new_pos > (file_size - 1)) {
+        return -1;
+    }
+    pf->fd_pos = new_pos;
+    return pf->fd_pos;
+}

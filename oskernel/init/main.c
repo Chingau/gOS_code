@@ -61,10 +61,9 @@ void kernel_main(void)
     memset(buf, 0, 64);
     read_bytes = sys_read(fd, buf, 6);
     printf("3_read %d bytes: %s\n", read_bytes, buf);
-    sys_close(fd);
 
-    fd = sys_open("/file1", O_RDWR);
     memset(buf, 0, 64);
+    sys_lseek(fd, 0, SEEK_SET);
     read_bytes = sys_read(fd, buf, 12);
     printf("4_read %d bytes: %s\n", read_bytes, buf);
     sys_close(fd);
