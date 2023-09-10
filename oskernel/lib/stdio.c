@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "stdio.h"
 #include "syscall.h"
+#include "string.h"
 
 uint32_t printf(const char *format, ...)
 {
@@ -9,7 +10,7 @@ uint32_t printf(const char *format, ...)
     char buf[1024] = {0};
     vsprintf(buf, format, args);
     va_end(args);
-    return write(buf);
+    return write(1, buf, strlen(buf));
 }
 
 int sprintf(char *str, const char *format, ...)

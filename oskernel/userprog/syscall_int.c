@@ -3,6 +3,7 @@
 #include "syscall.h"
 #include "types.h"
 #include "string.h"
+#include "fs.h"
 
 typedef void* syscall;
 syscall syscall_table[SYS_MAX_NR];
@@ -13,15 +14,6 @@ syscall syscall_table[SYS_MAX_NR];
 uint32_t sys_getpid(void)
 {
     return running_thread()->pid;
-}
-
-/*
- * 打印字符串str(未实现文件系统前的版本)
-*/
-uint32_t sys_write(char *str)
-{
-    printk(str);
-    return strlen((const char *)str);
 }
 
 /*

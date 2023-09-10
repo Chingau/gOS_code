@@ -47,17 +47,12 @@ void kernel_main(void)
 
     intr_enable();
 
-    sys_open("/file1", O_CREAT);
-    int fd = sys_open("/file1", O_RDONLY);
+    //sys_open("/file1", O_CREAT);
+    int fd = sys_open("/file1", O_RDWR);
     printk("sys_open fd:%d\n", fd);
+    printk("written:%d\n", sys_write(fd, "hello,world\n", 12));
     sys_close(fd);
     printk("fd close now.\n", fd);
-
-    fd = sys_open("/file2", O_RDONLY);
-    printk("sys_open fd:%d\n", fd);
-    int fd1 = sys_open("/file1", O_RDONLY);
-    printk("sys_open fd:%d\n", fd1);
-
     while (1);
     //BOCHS_DEBUG_MAGIC
 }

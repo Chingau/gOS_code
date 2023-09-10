@@ -245,3 +245,192 @@ int32_t file_close(struct file *file)
     file->fd_inode = NULL;      //使文件结构可用
     return 0;
 }
+
+/* 把buf中的count字节写入到文件描述符fd，成功返回写入的字节数，失败返回-1 */
+int32_t file_write(struct file *file, const void *buf, uint32_t count)
+{
+    if ((file->fd_inode->i_size + count) > (140 * BLOCK_SIZE)) {    //目前单个文件最大支持140*512字节
+        printk("exceed max file_size 71680 bytes, write file failed.\n");
+        return -1;
+    }
+
+    uint8_t *io_buf = (uint8_t *)sys_malloc(512);
+    if (io_buf == NULL) {
+        printk("sys_write: sys_malloc for io_buf failed.\n");
+        return -1;
+    }
+
+    uint32_t *all_blocks = (uint32_t *)sys_malloc((12 + 128) * 4);
+    if (all_blocks == NULL) {
+        printk("sys_write: sys_malloc for all_blocks failed.\n");
+        goto _write_exit_1;
+    }
+
+    const char *src = (char *)buf;
+    uint32_t byte_written = 0;      //用来记录已写入数据大小
+    uint32_t size_left = count;     //用来记录未写入数据大小
+    int32_t block_lba = -1;         //块地址
+    uint32_t block_bitmap_idx = 0;  //用来记录block对应block_bitmap中的索引，作为参数传给bitmap_sync
+
+    uint32_t sec_idx;               //用来索引扇区
+    uint32_t sec_lba;               //扇区地址
+    uint32_t sec_off_bytes;         //扇区内字节偏移量
+    uint32_t sec_left_bytes;        //扇区内剩余字节量
+    uint32_t chunk_size;            //每次写入硬盘的数据块大小
+    int32_t indirect_block_table;   //用来获取一级间接表地址
+    uint32_t block_idx;             //块索引
+
+    //判断文件是否是第一次写，如果是则分配一个块
+    if (file->fd_inode->i_sectors[0] == 0) {
+        block_lba = block_bitmap_alloc(curr_part);
+        if (block_lba == -1) {
+            printk("file_write: block_bitmap_alloc failed.\n");
+            goto _write_exit_2;
+        }
+        file->fd_inode->i_sectors[0] = block_lba;
+        //每分配一块就将位图同步到硬盘
+        block_bitmap_idx = block_lba - curr_part->sb->data_start_lba;
+        ASSERT(block_bitmap_idx != 0);
+        bitmap_sync(curr_part, block_bitmap_idx, BLOCK_BITMAP);
+    }
+
+    //获取在写入数据前，该文件已经占用的块数
+    uint32_t file_has_used_blocks = file->fd_inode->i_size / BLOCK_SIZE + 1;
+    //存储count字节后，文件将占用的块数
+    uint32_t file_will_used_blocks = (file->fd_inode->i_size + count) / BLOCK_SIZE + 1;
+    ASSERT(file_will_used_blocks <= 140);
+    //通过此增量判断是否需要新分配块，如果增量为0，表示原块够用
+    uint32_t add_blocks = file_will_used_blocks - file_has_used_blocks;
+
+    if (add_blocks == 0) {
+        if (file_will_used_blocks <= 12) {  //数据在直接块内
+            block_idx = file_has_used_blocks - 1;
+            all_blocks[block_idx] = file->fd_inode->i_sectors[block_idx];   //指向最后一个已有数据的扇区
+        } else {
+            //未写数据之前已经占用了间接块，需要从硬盘中把间接块信息读到内存
+            ASSERT(file->fd_inode->i_sectors[12] != 0);
+            indirect_block_table = file->fd_inode->i_sectors[12];
+            ide_read(curr_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+        }
+    } else {
+        //若有增量便涉及到分配新块(1块=1扇区)及是否分配一级间接块表; 下面要分三种情况处理：
+        /* 第一种情况：12个直接块够用 */
+        if (file_will_used_blocks <= 12) {
+            //先将有剩余空间可继续用的扇区地址写入到all_blocks
+            block_idx = file_has_used_blocks - 1;
+            ASSERT(file->fd_inode->i_sectors[block_idx] != 0);
+            all_blocks[block_idx] = file->fd_inode->i_sectors[block_idx];
+
+            //再将未来要使用到的扇区分配好写入到all_blocks中
+            block_idx = file_has_used_blocks;   //指向第一个要分配的新扇区
+            while (block_idx < file_will_used_blocks) {
+                block_lba = block_bitmap_alloc(curr_part);
+                if (block_lba == -1) {
+                    printk("sys_write: block_bitmap_alloc for situation 1 failed.\n");
+                    goto _write_exit_2;
+                }
+                
+                //写文件时不应该存在块未使用，但已经分配扇区的情况，当文件删除时，就会把块地址清0
+                ASSERT(file->fd_inode->i_sectors[block_idx] == 0);
+                //确保尚未分配扇区地址
+                file->fd_inode->i_sectors[block_idx] = all_blocks[block_idx] = block_lba;
+                //每分配一个块就将位图同步到硬盘
+                block_bitmap_idx = block_lba - curr_part->sb->data_start_lba;
+                bitmap_sync(curr_part, block_bitmap_idx, BLOCK_BITMAP);
+                block_idx++;
+            }
+        } else if (file_has_used_blocks <= 12 && file_will_used_blocks > 12) {
+        /* 第二种情况：旧数据在12个直接块内，新数据将使用间接块 */
+            //先将有剩余空间的可继续用的扇区地址收集到all_blocks
+            block_idx = file_has_used_blocks - 1;
+            all_blocks[block_idx] = file->fd_inode->i_sectors[block_idx];   //指向旧数据所在的最后一个扇区
+            //创建一级间接块表
+            block_lba = block_bitmap_alloc(curr_part);
+            if (block_lba == -1) {
+                printk("file_write: block_bitmap_alloc for situation 2 failed.\n");
+                goto _write_exit_2;
+            }
+            ASSERT(file->fd_inode->i_sectors[12] == 0);
+            indirect_block_table = file->fd_inode->i_sectors[12] = block_lba;
+
+            block_idx = file_has_used_blocks;
+            while (block_idx < file_will_used_blocks) {
+                block_lba = block_bitmap_alloc(curr_part);
+                if (block_lba == -1) {
+                    printk("file_write: block_bitmap_alloc for situation 2 failed.\n");
+                    goto _write_exit_2;
+                }
+
+                if (block_idx < 12) {
+                    //新创建的0~11块直接存入all_blocks数组
+                    ASSERT(file->fd_inode->i_sectors[block_idx] == 0);
+                    file->fd_inode->i_sectors[block_idx] = all_blocks[block_idx] - block_lba;
+                } else {
+                    //间接块只写入到all_blocks数组中，待全部分配完成后一次性同步到硬盘
+                    all_blocks[block_idx] = block_lba;
+                }
+                block_bitmap_idx = block_lba - curr_part->sb->data_start_lba;
+                bitmap_sync(curr_part, block_bitmap_idx, BLOCK_BITMAP);
+                block_idx++;
+            }
+            ide_write(curr_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+        } else if (file_has_used_blocks > 12) {
+            /* 第三种情况：新数据占据间接块 */
+            ASSERT(file->fd_inode->i_sectors[12] != 0);
+            indirect_block_table = file->fd_inode->i_sectors[12];
+            ide_read(curr_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+
+            block_idx = file_has_used_blocks;    //第一个未使用的间接块，即已经使用的间接块的下一块
+            while (block_idx < file_will_used_blocks) {
+                block_lba = block_bitmap_alloc(curr_part);
+                if (block_lba == -1) {
+                    printk("file_write: block_bitmap_alloc for situation 3 failed.\n");
+                    goto _write_exit_2;
+                }
+                all_blocks[block_idx++] = block_lba;
+                block_bitmap_idx = block_lba - curr_part->sb->data_start_lba;
+                bitmap_sync(curr_part, block_bitmap_idx, BLOCK_BITMAP);
+            }
+            ide_write(curr_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+        }
+    }
+
+    /* 用到的块地址已经收集到all_blocks中，下面开始写数据 */
+    bool first_write_block = true;      //含有剩余空间的块标识
+    file->fd_pos = file->fd_inode->i_size - 1;
+    while (byte_written < count) {
+        memset(io_buf, 0, BLOCK_SIZE);
+        sec_idx = file->fd_inode->i_size / BLOCK_SIZE;
+        sec_lba = all_blocks[sec_idx];
+        sec_off_bytes = file->fd_inode->i_size % BLOCK_SIZE;
+        sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
+
+        //判断此次写入硬盘的数据大小
+        chunk_size = size_left < sec_left_bytes ? size_left : sec_left_bytes;
+        if (first_write_block) {
+            ide_read(curr_part->my_disk, sec_lba, io_buf, 1);
+            first_write_block = false;
+        }
+        memcpy(io_buf + sec_off_bytes, src, chunk_size);
+        ide_write(curr_part->my_disk, sec_lba, io_buf, 1);
+        //printk("file write at lba 0x%x\n", sec_lba);  //调试
+        src += chunk_size;
+        file->fd_inode->i_size += chunk_size;
+        file->fd_pos += chunk_size;
+        byte_written += chunk_size;
+        size_left -= chunk_size;
+    }
+    inode_sync(curr_part, file->fd_inode, io_buf);
+
+_write_exit_2:
+    sys_free(all_blocks);
+_write_exit_1:
+    sys_free(io_buf);
+    return -1;
+}
+
+/* 从文件file中读取count个字节写入buf中，成功返回读出的字节数，若到文件尾则返回-1 */
+int32_t file_read(struct file *file, void *buf, uint32_t count)
+{
+    return 0;
+}
