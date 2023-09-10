@@ -457,7 +457,7 @@ int32_t file_read(struct file *file, void *buf, uint32_t count)
     }
     uint32_t *all_blocks = (uint32_t *)sys_malloc(BLOCK_SIZE + 48);
     if (all_blocks == NULL) {
-        printk("%d[%d]: sys_malloc for all_blocks failed.\n", __FUNCTION__, __LINE__);
+        printk("%s[%d]: sys_malloc for all_blocks failed.\n", __FUNCTION__, __LINE__);
         goto _read_exit_1;
     }
 

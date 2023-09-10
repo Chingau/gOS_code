@@ -48,25 +48,8 @@ void kernel_main(void)
 
     intr_enable();
 
-    int fd = sys_open("/file1", O_RDWR);
-    printf("open /file1, fd:%d\n", fd);
-    char buf[64] = {0};
-    int read_bytes = sys_read(fd, buf, 6);
-    printf("1_read %d bytes: %s\n", read_bytes, buf);
-
-    memset(buf, 0, 64);
-    read_bytes = sys_read(fd, buf, 8);
-    printf("2_read %d bytes: %s\n", read_bytes, buf);
-
-    memset(buf, 0, 64);
-    read_bytes = sys_read(fd, buf, 6);
-    printf("3_read %d bytes: %s\n", read_bytes, buf);
-
-    memset(buf, 0, 64);
-    sys_lseek(fd, 0, SEEK_SET);
-    read_bytes = sys_read(fd, buf, 12);
-    printf("4_read %d bytes: %s\n", read_bytes, buf);
-    sys_close(fd);
+    printf("/file1 delete %s\n", sys_unlink("/file1") == 0 ? "done" : "fail");
+    printf("/file2 delete %s\n", sys_unlink("/file2") == 0 ? "done" : "fail");
 
     while (1);
     //BOCHS_DEBUG_MAGIC
