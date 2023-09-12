@@ -734,3 +734,34 @@ void sys_rewinddir(struct dir *dir)
 {
     dir->dir_pos = 0;
 }
+
+/* 删除空目录，成功时返回0，失败时返回-1 */
+int32_t sys_rmdir(const char *pathname)
+{
+    //先检查待删除的文件是否存在
+    struct path_search_record searched_record;
+    int retval = -1;
+
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int inode_no = search_file(pathname, &searched_record);
+    ASSERT(inode_no != 0);
+    if (inode_no == -1) {
+        printk("%s[%d]:In %s, sub path %s not exist.\n", __FUNCTION__, __LINE__, pathname, searched_record.searched_path);
+    } else {
+        if (searched_record.file_type == FT_REGULAR) {
+            printk("%s[%d]:%s is regular file.\n", __FUNCTION__, __LINE__, pathname);
+        } else {
+            struct dir *dir = dir_open(curr_part, inode_no);
+            if (!dir_is_empty(dir)) {  //非空目录不可删除
+                printk("%s[%d]:dir %s is not empty, it is not allowed to delete a nonempty directory.\n", __FUNCTION__, __LINE__, pathname);
+            } else {
+                if (dir_remove(searched_record.parent_dir, dir) == 0) {
+                    retval = 0;
+                }
+            }
+            dir_close(dir);
+        }
+    }
+    dir_close(searched_record.parent_dir);
+    return retval;
+}
