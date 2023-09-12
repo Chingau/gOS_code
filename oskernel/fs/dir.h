@@ -11,7 +11,7 @@
 struct dir {
     struct inode *inode;
     uint32_t dir_pos;           //记录在目录内的偏移
-    uint32_t dir_buf[512];      //目录的数据缓存
+    uint32_t dir_buf[512];      //目录的数据缓存,用于存储目录项
 };
 
 struct dir_entry {
@@ -29,4 +29,5 @@ void dir_close(struct dir *dir);
 void create_dir_entry(char *filename, uint32_t inode_no, uint8_t file_type, struct dir_entry *p_de);
 bool sync_dir_entry(struct dir *parent_dir, struct dir_entry *pde, void *io_buf);
 bool delete_dir_entry(struct partition *part, struct dir *pdir, uint32_t inode_no, void *io_buf);
+struct dir_entry *dir_read(struct dir *dir);
 #endif
