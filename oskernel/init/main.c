@@ -48,9 +48,20 @@ void kernel_main(void)
 
     intr_enable();
 
-    printf("/file1 delete %s\n", sys_unlink("/file1") == 0 ? "done" : "fail");
-    printf("/file2 delete %s\n", sys_unlink("/file2") == 0 ? "done" : "fail");
+    printf("/dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
+    printf("/dir2 create %s.\n", sys_mkdir("/dir2") == 0 ? "done" : "fail");
+    printf("now, /dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
 
+    int fd = sys_open("/dir2/subdir2/file2", O_CREAT|O_RDWR);
+    if (fd != -1) {
+        printf("/dir2/subdir2/file2 create done!\n");
+        sys_write(fd, "catch me if you can!\n", 21);
+        sys_lseek(fd, 0, SEEK_SET);
+        char buf[32] = {0};
+        sys_read(fd, buf, 21);
+        printf("/dir2/subdir2/file2 says: %s\n", buf);
+        sys_close(fd);
+    }
     while (1);
     //BOCHS_DEBUG_MAGIC
 }

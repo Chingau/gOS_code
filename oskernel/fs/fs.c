@@ -7,6 +7,7 @@
 #include "string.h"
 #include "debug.h"
 #include "file.h"
+#include "system.h"
 
 struct partition *curr_part; //默认情况下操作的是哪个分区 
 
@@ -75,7 +76,7 @@ static void partition_format(struct partition *part)
 
     //超始块初始化
     struct super_block sb;
-    sb.magic = 0x20230902;
+    sb.magic = 0x20230904;
     sb.sec_cnt = part->sec_cnt;
     sb.inode_cnt = MAX_FILES_PER_PART;
     sb.part_lba_base = part->start_lba;
@@ -316,7 +317,7 @@ void filesys_init(void)
                 if (part->sec_cnt != 0) {   //如果分区存在
                     memset(sb_buf, 0, SECTOR_SIZE);
                     ide_read(hd, part->start_lba + 1, sb_buf, 1);   //从硬盘中读出超级块
-                    if (sb_buf->magic == 0x20230902) {
+                    if (sb_buf->magic == 0x20230904) {
                         printk("\"%s\" has filesystem.\n", part->name);
                     } else {
                         printk("formatting %s's partition %s......\n", hd->name, part->name);
@@ -396,7 +397,7 @@ int32_t sys_open(const char *pathname, uint8_t flags)
 
     switch (flags & O_CREAT) {
         case O_CREAT:
-            printk("creating file.\n");
+            //printk("creating file.\n");
             fd = file_create(searched_record.parent_dir, (strrchr(pathname, '/') + 1), flags);
             dir_close(searched_record.parent_dir);
         break;
@@ -561,4 +562,125 @@ int32_t sys_unlink(const char *pathname)
     sys_free(io_buf);
     dir_close(searched_record.parent_dir);
     return 0;
+}
+
+/* 创建目录pathname，成功返回0，失败返回-1 */
+int32_t sys_mkdir(const char *pathname)
+{
+    /*
+        创建目录所涉及的工作包括：
+        1.确认待创建的新目录在文件系统上不存在
+        2.为新目录创建inode
+        3.为新目录分配1个块存储该目录中的目录项
+        4.在新目录中创建两个目录项"."".."
+        5.在新目录的父目录中添加新目录的目录项
+        6.将以上资源的变更同步到硬盘
+    */
+    uint8_t rollback_step = 0;  //用于操作失败时回滚各资源状态
+    void *io_buf = sys_malloc(SECTOR_SIZE * 2);
+    if (io_buf == NULL) {
+        printk("%s[%d]:sys_malloc for io_buf failed.\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int inode_no = -1;
+    inode_no = search_file(pathname, &searched_record);
+    if (inode_no != -1) {       //如果找到了同名目录或文件，失败返回
+        printk("%s[%d]:file or directory %s exist.\n", __FUNCTION__, __LINE__, pathname);
+        rollback_step = 1;
+        goto rollback;
+    } else {
+        //若未找到，也要判断是在最终目录没找到，还是某个中间目录不存在
+        uint32_t pathname_depth = path_depth_cnt((char *)pathname);
+        uint32_t path_searched_depth = path_depth_cnt(searched_record.searched_path);
+        if (pathname_depth != path_searched_depth) {
+            printk("%s[%d]:cannot access %s: Not a directory, subpath %s is't exist.\n", __FUNCTION__, __LINE__, pathname, searched_record.searched_path);
+            rollback_step = 1;
+            goto rollback;
+        }
+    }
+
+    struct dir *parent_dir = searched_record.parent_dir;
+    //目录名称后可能会有字符'/'，所以最好直接用searched_record.searched_path,无'/'
+    char *dirname = strrchr(searched_record.searched_path, '/') + 1;
+    inode_no = inode_bitmap_alloc(curr_part);
+    if (inode_no == -1) {
+        printk("%s[%d]:allocate inode failed.\n", __FUNCTION__, __LINE__);
+        rollback_step = 1;
+        goto rollback;
+    }
+
+    struct inode new_dir_inode;
+    inode_init(inode_no, &new_dir_inode);   //初始化inode
+
+    uint32_t block_bitmap_idx = 0;
+    int32_t block_lba = -1;
+    block_lba = block_bitmap_alloc(curr_part);  //为目录分配一个块，用来写入目录.和..
+    if (block_lba == -1) {
+        printk("%s[%d]:block_bitmap_alloc for create directory failed.\n", __FUNCTION__, __LINE__);
+        rollback_step = 2;
+        goto rollback;
+    }
+
+    new_dir_inode.i_sectors[0] = block_lba;
+    //每分配一个块就立即把位图同步到硬盘
+    block_bitmap_idx = block_lba - curr_part->sb->data_start_lba;
+    ASSERT(block_bitmap_idx != 0);
+    bitmap_sync(curr_part, block_bitmap_idx, BLOCK_BITMAP);
+
+    //将当前目录和目录项.和..写入目录
+    memset(io_buf, 0, SECTOR_SIZE * 2);
+    struct dir_entry *p_de = (struct dir_entry *)io_buf;
+
+    memcpy(p_de->filename, ".", 1);
+    p_de->i_no = inode_no;
+    p_de->f_type = FT_DIRECTORY;
+
+    p_de++;
+    memcpy(p_de->filename, "..", 2);
+    p_de->i_no = parent_dir->inode->i_no;
+    p_de->f_type = FT_DIRECTORY;
+    ide_write(curr_part->my_disk, new_dir_inode.i_sectors[0], io_buf, 1);
+
+    new_dir_inode.i_size = 2 * curr_part->sb->dir_entry_size;
+
+    //在父目录中添加自己的目录项
+    struct dir_entry new_dir_entry;
+    memset(&new_dir_entry, 0, sizeof(struct dir_entry));
+    create_dir_entry(dirname, inode_no, FT_DIRECTORY, &new_dir_entry);
+    memset(io_buf, 0, SECTOR_SIZE * 2);
+    if (!sync_dir_entry(parent_dir, &new_dir_entry, io_buf)) {
+        //sync_dir_entry中将block_bitmap通过bitmap_sync同步到硬盘
+        printk("%s[%d]:sync_dir_entry to disk failed.\n");
+        rollback_step = 2;
+        goto rollback;
+    }
+
+    //父目录的inode同步到硬盘
+    memset(io_buf, 0, SECTOR_SIZE * 2);
+    inode_sync(curr_part, parent_dir->inode, io_buf);
+
+    //将新创建目录的inode同步到硬盘
+    memset(io_buf, 0, SECTOR_SIZE * 2);
+    inode_sync(curr_part, &new_dir_inode, io_buf);
+
+    //将inode位图同步到硬盘
+    bitmap_sync(curr_part, inode_no, INODE_BITMAP);
+    sys_free(io_buf);
+
+    //关闭所创建目录的父目录
+    dir_close(searched_record.parent_dir);
+    return 0;
+
+rollback:
+    switch (rollback_step) {
+        case 2:
+            bitmap_set(&curr_part->inode_bitmap, inode_no, 0);
+        case 1:
+            dir_close(searched_record.parent_dir);
+        break;
+    }
+    sys_free(io_buf);
+    return -1;
 }
