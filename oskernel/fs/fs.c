@@ -684,3 +684,40 @@ rollback:
     sys_free(io_buf);
     return -1;
 }
+
+/* 目录打开成功后返回目录指针，失败返回NULL */
+struct dir *sys_opendir(const char *name)
+{
+    ASSERT(strlen(name) < MAX_PATH_LEN);
+    /* 如果是根目录'/'，直接返回&root_dir */
+    if (name[0] == '/' && (name[1] == 0 || name[1] == '.'))
+        return &root_dir;
+
+    //先检查待打开的目录是否存在
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int inode_no = search_file(name, &searched_record);
+    struct dir *ret = NULL;
+    if (inode_no == -1) {
+        printk("%s[%d]:In %s, sub path %s not exist.\n", __FUNCTION__, __LINE__, name, searched_record.searched_path);
+    } else {
+        if (searched_record.file_type == FT_REGULAR) {
+            printk("%s[%d]:%s is regular file.\n", __FUNCTION__, __LINE__, name);
+        } else if (searched_record.file_type == FT_DIRECTORY) {
+            ret = dir_open(curr_part, inode_no);
+        }
+    }
+    dir_close(searched_record.parent_dir);
+    return ret;
+}
+
+/* 关闭目录，成功关闭目录p_dir并返回0，失败返回-1 */
+int32_t sys_closedir(struct dir *dir)
+{
+    int32_t ret = -1;
+    if (dir != NULL) {
+        dir_close(dir);
+        ret = 0;
+    }
+    return ret;
+}

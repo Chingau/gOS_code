@@ -16,6 +16,7 @@
 #include "stdio.h"
 #include "ide.h"
 #include "fs.h"
+#include "dir.h"
 
 void k_thread_a(void *);
 void k_thread_b(void *);
@@ -48,19 +49,20 @@ void kernel_main(void)
 
     intr_enable();
 
-    printf("/dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
-    printf("/dir2 create %s.\n", sys_mkdir("/dir2") == 0 ? "done" : "fail");
-    printf("now, /dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
+    // printf("/dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
+    // printf("/dir2 create %s.\n", sys_mkdir("/dir2") == 0 ? "done" : "fail");
+    // printf("now, /dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
 
-    int fd = sys_open("/dir2/subdir2/file2", O_CREAT|O_RDWR);
-    if (fd != -1) {
-        printf("/dir2/subdir2/file2 create done!\n");
-        sys_write(fd, "catch me if you can!\n", 21);
-        sys_lseek(fd, 0, SEEK_SET);
-        char buf[32] = {0};
-        sys_read(fd, buf, 21);
-        printf("/dir2/subdir2/file2 says: %s\n", buf);
-        sys_close(fd);
+    struct dir *p_dir = sys_opendir("/dir1/subdir1");
+    if (p_dir) {
+        printf("/dir1/subdir1 open done!\n");
+        if (sys_closedir(p_dir) == 0) {
+            printf("/dir1/subdir1 close done.\n");
+        } else {
+            printf("/dir1/subdir1 close fail.\n");
+        }
+    } else {
+        printf("/dir1/subdir1 open fail.\n");
     }
     while (1);
     //BOCHS_DEBUG_MAGIC
