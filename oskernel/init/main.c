@@ -53,14 +53,15 @@ void kernel_main(void)
     // printf("/dir2 create %s.\n", sys_mkdir("/dir2") == 0 ? "done" : "fail");
     // printf("now, /dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
 
-    char cwd_buf[32] = {0};
-    sys_getcwd(cwd_buf, 32);
-    printf("cwd:%s\n", cwd_buf);
-    sys_chdir("/dir1");
-    sys_getcwd(cwd_buf, 32);
-    printf("cwd:%s\n", cwd_buf);
+    struct stat obj_stat;
+    sys_stat("/", &obj_stat);
+    printf("/'s info:\n");
+    printf("    i_no:%d, size:%d, filetype:%s\n", obj_stat.st_ino, obj_stat.st_size, obj_stat.st_filetype == FT_DIRECTORY ? "dir" : "reg");
+
+    printf("/dir2's info:\n");
+    sys_stat("/dir2", &obj_stat);
+    printf("    i_no:%d, size:%d, filetype:%s\n", obj_stat.st_ino, obj_stat.st_size, obj_stat.st_filetype == FT_DIRECTORY ? "dir" : "reg");
     
-__exit:
     while (1);
     //BOCHS_DEBUG_MAGIC
 }
