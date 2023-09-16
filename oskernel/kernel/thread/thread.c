@@ -9,6 +9,7 @@
 #include "sync.h"
 
 extern void switch_to(struct task_struct *curr, struct task_struct *next);
+extern void init(void);
 
 struct task_struct *main_thread;        //主线程PCB
 struct task_struct *idle_thread;        //idle线程
@@ -61,6 +62,7 @@ void init_thread(struct task_struct* pthread, char *name, uint8_t prio)
         fd_idx++;
     }
     pthread->cwd_inode_nr = 0;  //以根目录作为默认工作路径
+    pthread->parent_pid = -1;   //父进程pid默认为-1
     pthread->stack_magic = 0x20000324;
 }
 
@@ -174,6 +176,9 @@ void thread_init(void)
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
     lock_init(&pid_lock);
+
+    //先创建第一个用户进程:init,使其pid=1
+    process_execute(init, "init", 10);
     make_main_thread(); //将当前main函数创建为线程
     idle_thread = thread_start("idle", 5, idle, NULL);  //创建idle线程
 }
@@ -228,4 +233,9 @@ void thread_yield(void)
     curr->status = TASK_READY;
     schedule();
     intr_set_status(old_status);
+}
+
+pid_t fork_pid(void)
+{
+    return allocate_pid();
 }

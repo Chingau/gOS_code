@@ -23,6 +23,18 @@ void k_thread_b(void *);
 void u_prog_a(void);
 void u_prog_b(void);
 
+/* init 进程 */
+void init(void)
+{
+    uint32_t ret_pid = fork();
+    if (ret_pid) {
+        printf("I am father, my pid is %d, child pid is %d\n", getpid(), ret_pid);
+    } else {
+        printf("I am child, my pid is %d, ret pid is %d\n", getpid(), ret_pid);
+    }
+    while (1);
+}
+
 void kernel_main(void)
 {
     console_init();
@@ -48,19 +60,6 @@ void kernel_main(void)
     process_execute(u_prog_b, "u_prog_b", 20);
 
     intr_enable();
-
-    // printf("/dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
-    // printf("/dir2 create %s.\n", sys_mkdir("/dir2") == 0 ? "done" : "fail");
-    // printf("now, /dir2/subdir2 create %s.\n", sys_mkdir("/dir2/subdir2") == 0 ? "done" : "fail");
-
-    struct stat obj_stat;
-    sys_stat("/", &obj_stat);
-    printf("/'s info:\n");
-    printf("    i_no:%d, size:%d, filetype:%s\n", obj_stat.st_ino, obj_stat.st_size, obj_stat.st_filetype == FT_DIRECTORY ? "dir" : "reg");
-
-    printf("/dir2's info:\n");
-    sys_stat("/dir2", &obj_stat);
-    printf("    i_no:%d, size:%d, filetype:%s\n", obj_stat.st_ino, obj_stat.st_size, obj_stat.st_filetype == FT_DIRECTORY ? "dir" : "reg");
     
     while (1);
     //BOCHS_DEBUG_MAGIC
