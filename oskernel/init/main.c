@@ -17,6 +17,7 @@
 #include "ide.h"
 #include "fs.h"
 #include "dir.h"
+#include "shell.h"
 
 void k_thread_a(void *);
 void k_thread_b(void *);
@@ -28,11 +29,12 @@ void init(void)
 {
     uint32_t ret_pid = fork();
     if (ret_pid) {
-        printf("I am father, my pid is %d, child pid is %d\n", getpid(), ret_pid);
+        while (1);
     } else {
-        printf("I am child, my pid is %d, ret pid is %d\n", getpid(), ret_pid);
+        //子进程
+        my_shell();
     }
-    while (1);
+    PANIC("init:should not be here.");
 }
 
 void kernel_main(void)
@@ -50,7 +52,8 @@ void kernel_main(void)
     ide_init();
     filesys_init();
     print_unlock("hello gos, init done.\n");
-    BOCHS_DEBUG_MAGIC
+    console_clear();
+    printk("[gaoxu@localhost /]$ ");
     
     //创建两个内核线程
     thread_start("consumer_a", 10, k_thread_a, "argA");

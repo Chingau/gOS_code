@@ -71,3 +71,20 @@ pid_t fork(void)
 {
     return _syscall0(SYS_FORK);
 }
+
+ssize_t read(int fd, void *buf, size_t count)
+{
+    return _syscall3(SYS_READ, fd, buf, count);
+}
+
+/* 清空屏幕 */
+void clear(void)
+{
+    _syscall0(SYS_CLEAR);
+}
+
+/* 输出一个字符 */
+void putchar(char char_asci)
+{
+    _syscall1(SYS_PUTCHAR, char_asci);
+}

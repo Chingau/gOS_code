@@ -21,6 +21,7 @@ PATHS += oskernel/mm
 PATHS += oskernel/userprog
 PATHS += oskernel/kernel/device
 PATHS += oskernel/fs
+PATHS += oskernel/shell
 FILES := $(foreach path, $(PATHS), $(wildcard $(path)/*.c))
 OBJS := $(patsubst %.c, %.o, $(FILES))
 
@@ -36,6 +37,7 @@ INCS += oskernel/lib/user
 INCS += oskernel/userprog
 INCS += oskernel/kernel/device
 INCS += oskernel/fs
+INCS += oskernel/shell
 INC_PATHS := $(foreach path, $(INCS), $(patsubst %, -I%, $(path)))
 
 all: oskernel/boot/boot.o oskernel/boot/setup.o oskernel/system.bin

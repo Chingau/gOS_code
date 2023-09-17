@@ -56,7 +56,7 @@ static void set_cursor(void)
 }
 
 //清屏
-static void console_clear(void)
+void console_clear(void)
 {
     screen = MEM_BASE;
     pos = MEM_BASE;

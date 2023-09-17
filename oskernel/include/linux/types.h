@@ -13,6 +13,7 @@
 #define true 1
 #define false 0
 typedef unsigned int size_t;
+typedef unsigned int ssize_t;
 typedef long long int64;
 typedef unsigned char uchar;
 typedef unsigned short ushort;
