@@ -9,11 +9,26 @@
 #define cmd_len 128         //最大支持键入128个字符的命令行输入
 #define MAX_ARG_NR  16      //加上命令名外，最多支持15个参数
 
+typedef struct {
+    char cmd[16];
+    int32_t (*cmd_deal)(uint32_t, char **);
+} buildin_cmd_t;
+
 static char cmd_line[cmd_len] = {0};    //存储输入的命令
 char cwd_cache[64] = {0};   //用来记录当前目录，是当前目录的缓存，每次执行cd命令时会更新此内容
 char *argv[MAX_ARG_NR]; //argv必须是全局变量，为了以后exec的程序可访问参数
 int32_t argc = -1;
-static char final_path[MAX_PATH_LEN];   //用户输入的路径，经转化成绝对路径保存到final_path
+char final_path[MAX_PATH_LEN];   //用于清洗路径时的缓冲
+static buildin_cmd_t buildin_cmd[] = {
+    { "pwd",        buildin_pwd },
+    { "ls",         buildin_ls },
+    { "cd",         buildin_cd },
+    { "ps",         buildin_ps },
+    { "clear",      buildin_clear },
+    { "mkdir",      buildin_mkdir },
+    { "rmdir",      buildin_rmdir },
+    { "rm",         buildin_rm },
+};
 
 /* 输出提示符 */
 void print_prompt(void)
@@ -118,13 +133,18 @@ void my_shell(void)
             continue;
         }
 
-        int32_t arg_idx = 0;
-        while (arg_idx < argc) {
-            make_clear_abs_path(argv[arg_idx], final_path);
-            printf("%s -> %s ", argv[arg_idx], final_path);
-            arg_idx++;
+        uint32_t cmd_num = sizeof(buildin_cmd)/sizeof(buildin_cmd_t);
+        uint32_t cmd_idx = 0;
+        for (cmd_idx = 0; cmd_idx < cmd_num; ++cmd_idx) {
+            if (strcmp(buildin_cmd[cmd_idx].cmd, argv[0]) == 0) {
+                buildin_cmd[cmd_idx].cmd_deal(argc, argv);
+                break;
+            }
         }
-        printf("\n");
+
+        if (cmd_idx >= cmd_num) {
+            printf("%s maybe is a external command.\n", argv[0]);
+        }
     }
     PANIC("my_shell:should not be here.");
 }

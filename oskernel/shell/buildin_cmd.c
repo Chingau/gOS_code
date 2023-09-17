@@ -3,6 +3,10 @@
 #include "syscall.h"
 #include "dir.h"
 #include "string.h"
+#include "global.h"
+#include "stdio.h"
+
+extern char final_path[MAX_PATH_LEN];
 
 /* 将路径old_abs_path中的..和.转换为实际路径后存入new_abs_path */
 static void wash_path(char *old_abs_path, char *new_abs_path)
@@ -70,4 +74,69 @@ void make_clear_abs_path(char *path, char *final_path)
     }
     strcat(abs_path, path);
     wash_path(abs_path, final_path);
+}
+
+/* pwd命令的内建函数 */
+int32_t buildin_pwd(uint32_t argc, char ** argv UNUSED)
+{
+    if (argc != 1) {
+        printf("pwd: no argument support.\n");
+        return -1;
+    } else {
+        if (getcwd(final_path, MAX_PATH_LEN) != NULL) {
+            printf("%s\n", final_path);
+        } else {
+            printf("pwd: get current work directory failed.\n");
+        }
+    }
+    return 0;
+}
+
+/* cd命令的内建函数 */
+int32_t buildin_cd(uint32_t argc, char **argv)
+{
+    printf("cd is building...\n");
+    return 0;
+}
+
+/* ls命令的内建函数 */
+int32_t buildin_ls(uint32_t argc, char **argv)
+{
+    printf("ls is building...\n");
+    return 0;
+}
+
+/* ps命令的内建函数 */
+int32_t buildin_ps(uint32_t argc, char **argv)
+{
+    printf("ps is building...\n");
+    return 0;
+}
+
+/* clear命令的内建函数 */
+int32_t buildin_clear(uint32_t argc, char **argv)
+{
+    printf("clear is building...\n");
+    return 0;
+}
+
+/* mkdir命令的内建函数 */
+int32_t buildin_mkdir(uint32_t argc, char **argv)
+{
+    printf("mkdir is building...\n");
+    return 0;
+}
+
+/* rmdir命令的内建函数 */
+int32_t buildin_rmdir(uint32_t argc, char **argv)
+{
+    printf("rmdir is building...\n");
+    return 0;
+}
+
+/* rm命令的内建函数 */
+int32_t buildin_rm(uint32_t argc, char **argv)
+{
+    printf("rm is building...\n");
+    return 0;
 }
