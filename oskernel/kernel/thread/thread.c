@@ -311,7 +311,7 @@ static bool elem2thread_info(struct list_elem *pelem, int arg UNUSED)
 
 void sys_ps(void)
 {
-    char *ps_tittle = "PID      PPID        STAT        TICKS       COMMAND\n";
+    char *ps_tittle = "PID             PPID            STAT            TICKS           COMMAND\n";
     sys_write(stdout_no, ps_tittle, strlen(ps_tittle));
     list_traversal(&thread_all_list, elem2thread_info, 0);
 }

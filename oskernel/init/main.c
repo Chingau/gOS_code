@@ -63,9 +63,6 @@ void kernel_main(void)
     process_execute(u_prog_b, "u_prog_b", 20);
 
     intr_enable();
-
-    sys_ps();
-    
     while (1);
     //BOCHS_DEBUG_MAGIC
 }

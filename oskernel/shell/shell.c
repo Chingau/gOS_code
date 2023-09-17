@@ -4,6 +4,7 @@
 #include "syscall.h"
 #include "stdio.h"
 #include "string.h"
+#include "buildin_cmd.h"
 
 #define cmd_len 128         //最大支持键入128个字符的命令行输入
 #define MAX_ARG_NR  16      //加上命令名外，最多支持15个参数
@@ -12,6 +13,7 @@ static char cmd_line[cmd_len] = {0};    //存储输入的命令
 char cwd_cache[64] = {0};   //用来记录当前目录，是当前目录的缓存，每次执行cd命令时会更新此内容
 char *argv[MAX_ARG_NR]; //argv必须是全局变量，为了以后exec的程序可访问参数
 int32_t argc = -1;
+static char final_path[MAX_PATH_LEN];   //用户输入的路径，经转化成绝对路径保存到final_path
 
 /* 输出提示符 */
 void print_prompt(void)
@@ -102,6 +104,7 @@ void my_shell(void)
     cwd_cache[1] = 0;
     while (1) {
         print_prompt();
+        memset(final_path, 0, MAX_PATH_LEN);
         memset(cmd_line, 0, cmd_len);
         readline(cmd_line, cmd_len);
         if (cmd_line[0] == 0) {
@@ -117,7 +120,8 @@ void my_shell(void)
 
         int32_t arg_idx = 0;
         while (arg_idx < argc) {
-            printf("%s ", argv[arg_idx]);
+            make_clear_abs_path(argv[arg_idx], final_path);
+            printf("%s -> %s ", argv[arg_idx], final_path);
             arg_idx++;
         }
         printf("\n");
