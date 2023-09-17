@@ -7,6 +7,7 @@
 #include "fork.h"
 #include "syscall_int.h"
 #include "tty.h"
+#include "thread.h"
 
 typedef void* syscall;
 syscall syscall_table[SYS_MAX_NR];
@@ -38,4 +39,18 @@ void syscall_init(void)
     syscall_table[SYS_READ] = sys_read;
     syscall_table[SYS_CLEAR] = console_clear;
     syscall_table[SYS_PUTCHAR] = sys_putchar;
+    syscall_table[SYS_GETCWD] = sys_getcwd;
+    syscall_table[SYS_OPEN] = sys_open;
+    syscall_table[SYS_CLOSE] = sys_close;
+    syscall_table[SYS_LSEEK] = sys_lseek;
+    syscall_table[SYS_UNLINK] = sys_unlink;
+    syscall_table[SYS_MKDIR] = sys_mkdir;
+    syscall_table[SYS_OPENDIR] = sys_opendir;
+    syscall_table[SYS_CLOSEDIR] = sys_closedir;
+    syscall_table[SYS_RMDIR] = sys_rmdir;
+    syscall_table[SYS_READDIR] = sys_readdir;
+    syscall_table[SYS_REWINDIR] = sys_rewinddir;
+    syscall_table[SYS_STAT] = sys_stat;
+    syscall_table[SYS_CHDIR] = sys_chdir;
+    syscall_table[SYS_PS] = sys_ps;
 }

@@ -7,6 +7,9 @@
 #include "global.h"
 #include "userprog.h"
 #include "sync.h"
+#include "file.h"
+#include "fs.h"
+#include "stdio.h"
 
 extern void switch_to(struct task_struct *curr, struct task_struct *next);
 extern void init(void);
@@ -238,4 +241,77 @@ void thread_yield(void)
 pid_t fork_pid(void)
 {
     return allocate_pid();
+}
+
+/* 以填空格的方式输出 buf */
+static void pad_print(char *buf, int32_t buf_len, void *ptr, char format)
+{
+    memset(buf, 0, buf_len);
+    uint8_t out_pad_0idx = 0;
+
+    switch (format) {
+        case 's':
+            out_pad_0idx = sprintf(buf, "%s", ptr);
+        break;
+        case 'd':
+            out_pad_0idx = sprintf(buf, "%d", *((uint16_t *)ptr));
+        break;
+        case 'x':
+            out_pad_0idx = sprintf(buf, "%x", *((uint32_t *)ptr));
+    }
+    while (out_pad_0idx < buf_len) {    //以空格填充
+        buf[out_pad_0idx] = ' ';
+        out_pad_0idx++;
+    }
+    sys_write(stdout_no, buf, buf_len - 1);
+}
+
+/* 用于在list_traversal函数中的回调函数，用于针对线程队列的处理 */
+static bool elem2thread_info(struct list_elem *pelem, int arg UNUSED)
+{
+    struct task_struct *pthread = elem2entry(struct task_struct, all_list_tag, pelem);
+    char out_pad[16] = {0};
+
+    pad_print(out_pad, 16, &pthread->pid, 'd');
+    if (pthread->parent_pid == -1) {
+        pad_print(out_pad, 16, "NULL", 's');
+    } else {
+        pad_print(out_pad, 16, &pthread->parent_pid, 'd');
+    }
+
+    switch(pthread->status) {
+        case TASK_RUNNING:
+            pad_print(out_pad, 16, "RUNNING", 's');
+        break;
+        case TASK_READY:
+            pad_print(out_pad, 16, "READY", 's');
+        break;
+        case TASK_BLOCKED:
+            pad_print(out_pad, 16, "BLOCKED", 's');
+        break;
+        case TASK_WAITING:
+            pad_print(out_pad, 16, "WAITING", 's');
+        break;
+        case TASK_HANGING:
+            pad_print(out_pad, 16, "HANGING", 's');
+        break;
+        case 5:
+            pad_print(out_pad, 16, "DIED", 's');
+        break;
+    }
+    pad_print(out_pad, 16, &pthread->elapsed_ticks, 'x');
+
+    memset(out_pad, 0, 16);
+    ASSERT(strlen(pthread->name) < 17);
+    memcpy(out_pad, pthread->name, strlen(pthread->name));
+    strcat(out_pad, "\n");
+    sys_write(stdout_no, out_pad, strlen(out_pad));
+    return false;
+}
+
+void sys_ps(void)
+{
+    char *ps_tittle = "PID      PPID        STAT        TICKS       COMMAND\n";
+    sys_write(stdout_no, ps_tittle, strlen(ps_tittle));
+    list_traversal(&thread_all_list, elem2thread_info, 0);
 }
