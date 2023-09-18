@@ -53,7 +53,7 @@ void kernel_main(void)
     filesys_init();
     print_unlock("hello gos, init done.\n");
     console_clear();
-    printk("[gaoxu@localhost /]$ ");
+    printk("[gaoxu@localhost:/]$ ");
     
     //创建两个内核线程
     thread_start("consumer_a", 10, k_thread_a, "argA");
