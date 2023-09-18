@@ -5,6 +5,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "buildin_cmd.h"
+#include "exec.h"
 
 #define MAX_ARG_NR  16      //加上命令名外，最多支持15个参数
 
@@ -147,7 +148,31 @@ void my_shell(void)
                 strcpy(cwd_cache, final_path);
             }
         } else if (cmd_idx >= cmd_num) {
-            printf("%s maybe is a external command.\n", argv[0]);
+            //printf("%s maybe is a external command.\n", argv[0]);
+            //如果是外部命令，需要从磁盘上加载
+            int32_t pid = fork();
+            if (pid) {
+                /*
+                父进程，下面的while(1)必须要加上，否则父进程一般情况下会比子进程先执行，
+                因此会进行下一轮循环将final_path清空，
+                这样子进程将无法从final_path中获得参数。
+                */
+                while (1);
+            } else if (pid == 0) {
+                make_clear_abs_path(argv[0], final_path);
+                argv[0] = final_path;
+                //先判断文件是否存在
+                struct stat file_stat;
+                memset(&file_stat, 0, sizeof(struct stat));
+                if (stat(argv[0], &file_stat) == -1) {
+                    printf("my_shell: cannot access %s: No such file or directory.\n", argv[0]);
+                } else {
+                    execv(argv[0], (const char **)argv);
+                }
+                while (1);  //正常情况下代码运行不到这里
+            } else {
+                printf("my_shell:%s external command started failed.\n");
+            }
         }
     }
     PANIC("my_shell:should not be here.");

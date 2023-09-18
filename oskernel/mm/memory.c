@@ -212,7 +212,7 @@ static void vaddr_remove(enum pool_flags pf, void *_vaddr, uint32_t pg_cnt)
 /*
  * 由虚拟地址vaddr得到指向pte的虚拟地址
  * */
-static uint32_t *pte_ptr(uint32_t vaddr)
+uint32_t *pte_ptr(uint32_t vaddr)
 {
     /*
      * 先访问到页表自己 +
@@ -226,7 +226,7 @@ static uint32_t *pte_ptr(uint32_t vaddr)
 /*
  * 由虚拟地址vaddr得到指向pde的虚拟地址
  * */
-static uint32_t *pde_ptr(uint32_t vaddr)
+uint32_t *pde_ptr(uint32_t vaddr)
 {
     /* 0xfffff 用来访问到页表本身所在的地址 */
     uint32_t *pde = (uint32_t *)(0xfffff000 + PDE_IDX(vaddr) * 4);

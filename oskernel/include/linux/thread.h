@@ -9,6 +9,7 @@
 #include "mm.h"
 
 #define MAX_FILES_OPEN_PRE_PROC 8
+#define TASK_NAME_LEN   16
 
 typedef void thread_func(void *);
 
@@ -82,7 +83,7 @@ struct task_struct {
     uint32_t *self_kstack;          //各内核线程都用自己的内核栈
     pid_t pid;
     task_state_t status;            //线程状态
-    char name[16];                  //线程名
+    char name[TASK_NAME_LEN];       //线程名
     uint8_t priority;               //线程优先级
     uint8_t ticks;                  //每次在处理器上执行的时间嘀嗒数
     uint32_t elapsed_ticks;         //此任务自上CPU运行至今占用了多少CPU嘀嗒数，也就是执行了多长时间
