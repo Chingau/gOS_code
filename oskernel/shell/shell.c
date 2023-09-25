@@ -161,6 +161,7 @@ void my_shell(void)
             } else if (pid == 0) {
                 make_clear_abs_path(argv[0], final_path);
                 argv[0] = final_path;
+                printf("external command path:%s\n", final_path);
                 //先判断文件是否存在
                 struct stat file_stat;
                 memset(&file_stat, 0, sizeof(struct stat));

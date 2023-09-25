@@ -364,7 +364,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count)
                 if (block_idx < 12) {
                     //新创建的0~11块直接存入all_blocks数组
                     ASSERT(file->fd_inode->i_sectors[block_idx] == 0);
-                    file->fd_inode->i_sectors[block_idx] = all_blocks[block_idx] - block_lba;
+                    file->fd_inode->i_sectors[block_idx] = all_blocks[block_idx] = block_lba;
                 } else {
                     //间接块只写入到all_blocks数组中，待全部分配完成后一次性同步到硬盘
                     all_blocks[block_idx] = block_lba;
@@ -395,6 +395,9 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count)
         }
     }
 
+    //GAOXU
+    printk("all_blocks:%x\n", (uint32_t)all_blocks);
+
     /* 用到的块地址已经收集到all_blocks中，下面开始写数据 */
     bool first_write_block = true;      //含有剩余空间的块标识
     file->fd_pos = file->fd_inode->i_size - 1;
@@ -413,7 +416,7 @@ int32_t file_write(struct file *file, const void *buf, uint32_t count)
         }
         memcpy(io_buf + sec_off_bytes, src, chunk_size);
         ide_write(curr_part->my_disk, sec_lba, io_buf, 1);
-        //printk("file write at lba 0x%x\n", sec_lba);  //调试
+        printk("file write at lba 0x%x\n", sec_lba);  ////GAOXU
         src += chunk_size;
         file->fd_inode->i_size += chunk_size;
         file->fd_pos += chunk_size;

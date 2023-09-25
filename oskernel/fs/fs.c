@@ -79,7 +79,7 @@ static void partition_format(struct partition *part)
 
     //超始块初始化
     struct super_block sb;
-    sb.magic = 0x20230904;
+    sb.magic = 0x20230924;
     sb.sec_cnt = part->sec_cnt;
     sb.inode_cnt = MAX_FILES_PER_PART;
     sb.part_lba_base = part->start_lba;
@@ -320,7 +320,7 @@ void filesys_init(void)
                 if (part->sec_cnt != 0) {   //如果分区存在
                     memset(sb_buf, 0, SECTOR_SIZE);
                     ide_read(hd, part->start_lba + 1, sb_buf, 1);   //从硬盘中读出超级块
-                    if (sb_buf->magic == 0x20230904) {
+                    if (sb_buf->magic == 0x20230924) {
                         printk("\"%s\" has filesystem.\n", part->name);
                     } else {
                         printk("formatting %s's partition %s......\n", hd->name, part->name);
