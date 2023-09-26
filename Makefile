@@ -8,6 +8,7 @@ CFLAGS += -nostdlib	#不需要标准库
 CFLAGS += -fno-stack-protector	#不需要栈保护
 CFLAGS := $(strip ${CFLAGS})
 
+BUILD := oskernel/build
 DEBUG := -g -O0
 HD_IMG_NAME := hd.img
 
@@ -73,8 +74,13 @@ CLEANS += $(shell find -name "*.map")
 CLEANS += $(shell find -name "*.o")
 #CLEANS += $(shell find -name "*.img")
 
+mkcp:
+	$(shell mkdir ${BUILD})
+	$(shell mv $(CLEANS) $(BUILD))
+
 clean:
 	$(RM) $(CLEANS)
+	$(RM) -r $(BUILD)
 
 bochs:
 	bochs -q -f bochsrc
@@ -83,7 +89,7 @@ qemug: all
 	qemu-system-x86_64 -m 32M -hda oskernel/$(HD_IMG_NAME) -hdb oskernel/hd80M.img -S -s
 
 qemu: all
-	qemu-system-i386 \
+	qemu-system-x86_64 \
 	-m 32M \
 	-boot c \
 	-hda oskernel/$(HD_IMG_NAME) \

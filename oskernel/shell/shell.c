@@ -148,7 +148,6 @@ void my_shell(void)
                 strcpy(cwd_cache, final_path);
             }
         } else if (cmd_idx >= cmd_num) {
-            //printf("%s maybe is a external command.\n", argv[0]);
             //如果是外部命令，需要从磁盘上加载
             int32_t pid = fork();
             if (pid) {
@@ -161,7 +160,6 @@ void my_shell(void)
             } else if (pid == 0) {
                 make_clear_abs_path(argv[0], final_path);
                 argv[0] = final_path;
-                printf("external command path:%s\n", final_path);
                 //先判断文件是否存在
                 struct stat file_stat;
                 memset(&file_stat, 0, sizeof(struct stat));
