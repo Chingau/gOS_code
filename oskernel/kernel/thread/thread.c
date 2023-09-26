@@ -19,9 +19,18 @@ struct task_struct *idle_thread;        //idle线程
 struct list thread_ready_list;          //就绪队列
 struct list thread_all_list;            //所有任务队列
 static struct list_elem *thread_tag;
-lock_t pid_lock;                   //分配pid锁
+
+/* pid的位图，最大支持1024个pid */
+uint8_t pid_bitmap_bits[128] = {0};
+/* pid 池 */
+struct pid_pool {
+    bitmap_t pid_bitmap;    //pid位图
+    uint32_t pid_start;     //起始pid
+    lock_t pid_lock;        //分配pid锁
+} pid_pool;
 
 //函数声明
+static void pid_pool_init(void);
 static pid_t allocate_pid(void);
 
 /* 获取当前线程PCB指针 */
@@ -178,7 +187,7 @@ void thread_init(void)
     print_unlock("thread init...\r\n");
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
-    lock_init(&pid_lock);
+    pid_pool_init();
 
     //先创建第一个用户进程:init,使其pid=1
     process_execute(init, "init", 10);
@@ -214,16 +223,6 @@ void thread_unblock(struct task_struct *pthread)
         pthread->status = TASK_READY;
     }
     intr_set_status(old_stat);
-}
-
-/* 分配pid */
-static pid_t allocate_pid(void)
-{
-    static pid_t next_pid = 0;
-    lock_acquire(&pid_lock);
-    next_pid++;
-    lock_release(&pid_lock);
-    return next_pid;
 }
 
 /* 主动让出cpu，换其他线程运行 */
@@ -314,4 +313,85 @@ void sys_ps(void)
     char *ps_tittle = "PID             PPID            STAT            TICKS           COMMAND\n";
     sys_write(stdout_no, ps_tittle, strlen(ps_tittle));
     list_traversal(&thread_all_list, elem2thread_info, 0);
+}
+
+/* 初始化 pid 池 */
+static void pid_pool_init(void)
+{
+    pid_pool.pid_start = 1;
+    pid_pool.pid_bitmap.bits = pid_bitmap_bits;
+    pid_pool.pid_bitmap.btmp_bytes_len = sizeof(pid_bitmap_bits);
+    bitmap_init(&pid_pool.pid_bitmap);
+    lock_init(&pid_pool.pid_lock);
+}
+
+/* 分配pid */
+static pid_t allocate_pid(void)
+{
+    lock_acquire(&pid_pool.pid_lock);
+    int32_t bit_idx = bitmap_scan(&pid_pool.pid_bitmap, 1);
+    bitmap_set(&pid_pool.pid_bitmap, bit_idx, 1);
+    lock_release(&pid_pool.pid_lock);
+    return (bit_idx + pid_pool.pid_start);
+}
+
+/* 释放pid */
+void release_pid(pid_t pid)
+{
+    lock_acquire(&pid_pool.pid_lock);
+    int32_t bit_idx = pid - pid_pool.pid_start;
+    bitmap_set(&pid_pool.pid_bitmap, bit_idx, 0);
+    lock_release(&pid_pool.pid_lock);
+}
+
+/* 回收thread_over的pcb和页表，并将其从调度队列中去除 */
+void thread_exit(struct task_struct *thread_over, bool need_schedule)
+{
+    intr_disable();
+    thread_over->status = TASK_DIED;
+
+    //如果thread_over不是当前线程，就有可能还在就绪队列中，将其从中删除
+    if (elem_find(&thread_ready_list, &thread_over->general_tag)) {
+        list_remove(&thread_over->general_tag);
+    }
+
+    if (thread_over->pgdir) {
+        mfree_page(PF_KERNEL, thread_over->pgdir, 1);   //如果是进程，回收进程的页表
+    }
+
+    list_remove(&thread_over->all_list_tag);
+
+    //回收pcb所在的页，主线程的pcb不在堆中，跳过
+    if (thread_over != main_thread) {
+        mfree_page(PF_KERNEL, thread_over, 1);
+    }
+
+    release_pid(thread_over->pid);
+
+    //如果需要下一轮调度则主动调用schedule
+    if (need_schedule) {
+        schedule();
+        PANIC("thread_exit: should not be here.\n");
+    }
+}
+
+/* 比对任务的pid */
+static bool pid_check(struct list_elem *pelem, int32_t pid)
+{
+    struct task_struct *pthread = elem2entry(struct task_struct, all_list_tag, pelem);
+    if (pthread->pid == pid) {
+        return true;
+    }
+    return false;
+}
+
+/* 根据pid找pcb，若找到则返回该pcb，否则返回NULL */
+struct task_struct *pid2thread(int32_t pid)
+{
+    struct list_elem *pelem = list_traversal(&thread_all_list, pid_check, pid);
+    if (pelem == NULL)
+        return NULL;
+
+    struct task_struct *thread = elem2entry(struct task_struct, all_list_tag, pelem);
+    return thread;
 }

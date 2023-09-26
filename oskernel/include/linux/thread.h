@@ -19,7 +19,8 @@ typedef enum {
     TASK_READY,
     TASK_BLOCKED,
     TASK_WAITING,
-    TASK_HANGING
+    TASK_HANGING,
+    TASK_DIED
 } task_state_t;
 
 /* 中断栈 intr_stack_t */
@@ -95,6 +96,7 @@ struct task_struct {
     mem_block_desc_t u_block_desc[MEM_DESC_CNT];    //用户进程内存块描述符
     uint32_t cwd_inode_nr;          //进程所在的工作目录的inode编号
     int32_t parent_pid;             //父进程PID
+    int8_t exit_status;             //进程结束时自己调用exit传入的参数
     uint32_t stack_magic;           //栈的边界标记，用于检测栈的溢出
 };
 
@@ -112,4 +114,6 @@ void thread_create(struct task_struct* pthread, thread_func *function, void *arg
 void thread_yield(void);
 pid_t fork_pid(void);
 void sys_ps(void);
+void thread_exit(struct task_struct *thread_over, bool need_schedule);
+struct task_struct *pid2thread(int32_t pid);
 #endif

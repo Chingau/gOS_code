@@ -115,9 +115,11 @@ static int32_t cmd_parse(char *cmd_str, char **argv, char token)
 
 void my_shell(void)
 {
+    char cmd_flag = 0;  //标志是内部命令
     cwd_cache[0] = '/';
     cwd_cache[1] = 0;
     while (1) {
+        cmd_flag = 0;
         print_prompt();
         memset(final_path, 0, MAX_PATH_LEN);
         memset(cmd_line, 0, MAX_PATH_LEN);
@@ -138,6 +140,7 @@ void my_shell(void)
         for (cmd_idx = 0; cmd_idx < cmd_num; ++cmd_idx) {
             if (strcmp(buildin_cmd[cmd_idx].cmd, argv[0]) == 0) {
                 buildin_cmd[cmd_idx].cmd_deal(argc, argv);
+                cmd_flag = 1;
                 break;
             }
         }
@@ -147,31 +150,35 @@ void my_shell(void)
                 memset(cwd_cache, 0, MAX_PATH_LEN);
                 strcpy(cwd_cache, final_path);
             }
-        } else if (cmd_idx >= cmd_num) {
-            //如果是外部命令，需要从磁盘上加载
-            int32_t pid = fork();
-            if (pid) {
-                /*
-                父进程，下面的while(1)必须要加上，否则父进程一般情况下会比子进程先执行，
-                因此会进行下一轮循环将final_path清空，
-                这样子进程将无法从final_path中获得参数。
-                */
-                while (1);
-            } else if (pid == 0) {
-                make_clear_abs_path(argv[0], final_path);
-                argv[0] = final_path;
-                //先判断文件是否存在
-                struct stat file_stat;
-                memset(&file_stat, 0, sizeof(struct stat));
-                if (stat(argv[0], &file_stat) == -1) {
-                    printf("my_shell: cannot access %s: No such file or directory.\n", argv[0]);
-                } else {
-                    execv(argv[0], (const char **)argv);
-                }
-                while (1);  //正常情况下代码运行不到这里
-            } else {
-                printf("my_shell:%s external command started failed.\n");
+            cmd_flag = 1;
+        }
+
+        if (cmd_flag == 1)
+            continue;
+
+        //运行到这里的都是外部命令，需要从磁盘上加载
+        int32_t pid = fork();
+        if (pid) {
+            int32_t status;
+            int32_t child_pid = wait(&status);  //此时子进程若没有执行exit，my_shell会被阻塞，不再响应键入的命令
+            if (child_pid == -1) { 
+                PANIC("my_shell: no child.\n");
             }
+            printf("child_pid %d, it's status: %d\n", child_pid, status);
+        } else if (pid == 0) {
+            make_clear_abs_path(argv[0], final_path);
+            argv[0] = final_path;
+            //先判断文件是否存在
+            struct stat file_stat;
+            memset(&file_stat, 0, sizeof(struct stat));
+            if (stat(argv[0], &file_stat) == -1) {
+                printf("my_shell: cannot access %s: No such file or directory.\n", argv[0]);
+                exit(-1);
+            } else {
+                execv(argv[0], (const char **)argv);
+            }
+        } else {
+            printf("my_shell:%s external command started failed.\n");
         }
     }
     PANIC("my_shell:should not be here.");
